@@ -1,5 +1,9 @@
+if [[ -z "$script_dir" ]]; then
+  local script_dir=$HOME/bin/
+fi
+
 function gitdiffall () {
-  ruby ~/bin/gitdiffall.rb $*
+  ruby ${script_dir}gitdiffall.rb $*
 }
 function _gitdiffall () {
   if [[ -z "$(git rev-parse --is-inside-work-tree 2>/dev/null)" ]]; then
