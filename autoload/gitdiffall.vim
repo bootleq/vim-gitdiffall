@@ -142,7 +142,10 @@ function! gitdiffall#diffoff() "{{{
     endif
     silent only
 
-    execute 'edit ' . t:gitdiffall_info.file
+    if t:gitdiffall_info.file != expand('%')
+      execute 'edit ' . t:gitdiffall_info.file
+    endif
+
     call s:restore_diff_options()
     unlet t:gitdiffall_info
   endif
