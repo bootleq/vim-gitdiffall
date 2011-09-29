@@ -48,18 +48,26 @@ elsif $?.exitstatus != 0
   abort
 end
 
-if String(revision).match(/^@\w/)
-  revision = %x(git log --format=format:"_" #{revision[1..-1]}..).lines.to_a.length.to_s
+extra_diff_args = "#{diff_opts.join(' ')} #{pathes}"
+
+if String(revision).match(/^@\w+/)
+  logs = %x(git log --format=format:"_" #{revision[1..-1]}.. #{extra_diff_args})
+  if logs == ''
+    puts 'no differences'
+    abort
+  end
+
+  revision = logs.lines.to_a.length.to_s
   puts "Shortcut for this commit is #{revision}.\n\n"
 end
 
 if revision.to_i.to_s == revision and revision.length < MIN_HASH_ABBR
-  rev = %x(git log -1 --skip=#{revision} --format=format:"%h")
-  previous = %x(git log -1 --skip=#{revision.to_i + 1} --format=format:"%h")
+  rev = %x(git log -1 --skip=#{revision} --format=format:"%h" #{extra_diff_args})
+  previous = %x(git log -1 --skip=#{revision.to_i + 1} --format=format:"%h" #{extra_diff_args})
   revision = "#{rev}..#{previous}"
 end
 
-files = %x{git diff --name-only --relative #{revision}}.chomp
+files = %x{git diff --name-only #{revision} #{extra_diff_args}}.chomp
 count = files.lines.to_a.length
 
 if count > MAX_FILES
