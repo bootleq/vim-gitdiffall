@@ -195,7 +195,7 @@ endfunction "}}}
 " }}} Complete Functions
 
 
-" Utils: {{{
+" Git Operations: {{{
 
 function! s:merge_base_of(begin_rev, rev) "{{{
   let rev = system('git merge-base ' . a:begin_rev . ' ' . a:rev)[0:6])
@@ -223,12 +223,55 @@ function! s:shortcut_for_commit(rev, ...) "{{{
 endfunction "}}}
 
 
-function! s:throw_shell_error() "{{{
+function! s:get_content(rev, file) "{{{
+  " TODO use :<n>:<path> as rev, see gitrevisions(7)
+  let result = system(printf(
+        \   "git show %s:%s",
+        \   a:rev,
+        \   shellescape(a:file)
+        \ ))
   if v:shell_error
-    throw "gitdiffall:shell_exception: " . v:exception . " -- " . v:throwpoint
-  else
-    return 0
+    let result = substitute(result, '[\n]', ' ', 'g')
   endif
+  return {
+        \   'text': result,
+        \   'success': !v:shell_error
+        \ }
+endfunction "}}}
+
+" }}} Git Operations
+
+
+" Utils: {{{
+
+function! s:parse_options(args) "{{{
+  let end_of_opts = index(a:args, '--')
+  let pathes = end_of_opts < 0 ? [] : a:args[(end_of_opts + 1):]
+  let other_args = end_of_opts < 0 ? a:args : a:args[:max([0, end_of_opts - 1])]
+
+  let revision = []
+  let diff_opts = []
+  let use_cached = 0
+  for arg in other_args
+    if arg =~ '^-'
+      if arg == '--cached' || arg == '--staged'
+        let use_cached = 1
+      else
+        call add(diff_opts, arg)
+      endif
+    elseif empty(diff_opts)
+      call add(revision, arg)
+    endif
+  endfor
+  if len(revision) > 1
+    let revision = [split(revision[0], '\V..', 1)[0], split(revision[-1], '\V..', 1)[-1]]
+  endif
+  return [
+        \   join(revision),
+        \   use_cached,
+        \   join(diff_opts),
+        \   join(pathes)
+        \ ]
 endfunction "}}}
 
 
@@ -263,70 +306,6 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
 endfunction "}}}
 
 
-function! s:parse_options(args) "{{{
-  let end_of_opts = index(a:args, '--')
-  let pathes = end_of_opts < 0 ? [] : a:args[(end_of_opts + 1):]
-  let other_args = end_of_opts < 0 ? a:args : a:args[:max([0, end_of_opts - 1])]
-
-  let revision = []
-  let diff_opts = []
-  let use_cached = 0
-  for arg in other_args
-    if arg =~ '^-'
-      if arg == '--cached' || arg == '--staged'
-        let use_cached = 1
-      else
-        call add(diff_opts, arg)
-      endif
-    elseif empty(diff_opts)
-      call add(revision, arg)
-    endif
-  endfor
-  if len(revision) > 1
-    let revision = [split(revision[0], '\V..', 1)[0], split(revision[-1], '\V..', 1)[-1]]
-  endif
-  return [
-        \   join(revision),
-        \   use_cached,
-        \   join(diff_opts),
-        \   join(pathes)
-        \ ]
-endfunction "}}}
-
-
-function! s:cd_to_current_head() "{{{
-  let s:save_dir = getcwd()
-  let new_dir = fnameescape(expand('%:p:h'))
-  let cd_command = haslocaldir() ? 'lcd' : 'cd'
-  if isdirectory(new_dir)
-    execute cd_command . " " . new_dir
-  endif
-endfunction "}}}
-
-
-function! s:cd_to_original() "{{{
-  let cd_command = haslocaldir() ? 'lcd' : 'cd'
-  execute cd_command . " " . s:save_dir
-endfunction "}}}
-
-
-function! s:get_content(rev, file) "{{{
-  " TODO use :<n>:<path> as rev, see gitrevisions(7)
-  let result = system(printf(
-        \   "git show %s:%s",
-        \   a:rev,
-        \   shellescape(a:file)
-        \ ))
-  if v:shell_error
-    let result = substitute(result, '[\n]', ' ', 'g')
-  endif
-  return {
-        \   'text': result,
-        \   'success': !v:shell_error
-        \ }
-endfunction "}}}
-
-
 function! s:fill_buffer(content, filetype) "{{{
   silent put=a:content.text | 0delete _
   if a:content.success
@@ -354,6 +333,31 @@ function! s:restore_diff_options() "{{{
             \ )
     endfor
     unlet b:save_diff_options
+  endif
+endfunction "}}}
+
+
+function! s:cd_to_current_head() "{{{
+  let s:save_dir = getcwd()
+  let new_dir = fnameescape(expand('%:p:h'))
+  let cd_command = haslocaldir() ? 'lcd' : 'cd'
+  if isdirectory(new_dir)
+    execute cd_command . " " . new_dir
+  endif
+endfunction "}}}
+
+
+function! s:cd_to_original() "{{{
+  let cd_command = haslocaldir() ? 'lcd' : 'cd'
+  execute cd_command . " " . s:save_dir
+endfunction "}}}
+
+
+function! s:throw_shell_error() "{{{
+  if v:shell_error
+    throw "gitdiffall:shell_exception: " . v:exception . " -- " . v:throwpoint
+  else
+    return 0
   endif
 endfunction "}}}
 
