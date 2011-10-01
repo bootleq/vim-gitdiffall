@@ -24,8 +24,8 @@ function! gitdiffall#diff(args) "{{{
     return
   endif
 
-  let [revision, diff_opts, pathes] = s:parse_options(a:args)
-  let [begin_rev, rev] = s:parse_revision(revision, diff_opts, pathes)
+  let [revision, use_cached, diff_opts, pathes] = s:parse_options(a:args)
+  let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, pathes)
 
   let save_file = expand('%')
   let save_filetype = &filetype
@@ -232,21 +232,25 @@ function! s:throw_shell_error() "{{{
 endfunction "}}}
 
 
-function! s:parse_revision(revision, ...) "{{{
-  let option_args = a:0 ? a:1 : []
-  let path_args = a:0 > 1 ? a:2 : []
+function! s:parse_revision(revision, use_cached, ...) "{{{
+  let diff_opts = a:0 ? a:1 : []
+  let pathes = a:0 > 1 ? a:2 : []
   let begin_rev = s:REV_UNDEFINED
   let rev = a:revision
+
   let MIN_HASH_ABBR = 5
   call insert(s:complete_cache().recent, a:revision)
 
-  if stridx(a:revision, '...') != -1
+  if a:use_cached
+    let begin_rev = ''
+    let rev = 'HEAD'
+  elseif stridx(a:revision, '...') != -1
     let [begin_rev, rev] = split(a:revision, '\V...', 1)
     let begin_rev = s:merge_base_of(begin_rev, rev)
   elseif stridx(a:revision, '..') != -1
     let [begin_rev, rev] = split(a:revision, '\V..', 1)
   elseif a:revision =~ '^@\w'
-    let rev = s:shortcut_for_commit(a:revision, option_args, path_args)
+    let rev = s:shortcut_for_commit(a:revision, diff_opts, pathes)
     echo printf("Shortcut for this commit is %s.", rev)
   endif
 
@@ -266,9 +270,14 @@ function! s:parse_options(args) "{{{
 
   let revision = []
   let diff_opts = []
+  let use_cached = 0
   for arg in other_args
     if arg =~ '^-'
-      call add(diff_opts, arg)
+      if arg == '--cached' || arg == '--staged'
+        let use_cached = 1
+      else
+        call add(diff_opts, arg)
+      endif
     elseif empty(diff_opts)
       call add(revision, arg)
     endif
@@ -278,6 +287,7 @@ function! s:parse_options(args) "{{{
   endif
   return [
         \   join(revision),
+        \   use_cached,
         \   join(diff_opts),
         \   join(pathes)
         \ ]
@@ -301,10 +311,10 @@ endfunction "}}}
 
 
 function! s:get_content(rev, file) "{{{
-  " TODO :<n>:<path> instead of just HEAD, see gitrevisions(7)
+  " TODO use :<n>:<path> as rev, see gitrevisions(7)
   let result = system(printf(
         \   "git show %s:%s",
-        \   empty(a:rev) ? 'HEAD' : a:rev,
+        \   a:rev,
         \   shellescape(a:file)
         \ ))
   if v:shell_error

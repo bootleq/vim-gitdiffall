@@ -10,8 +10,10 @@ opt =  OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
 
 revision, diff_opts, pathes = '', [], ''
+use_cached = ''
 
-opt.on('-c', '--cached', '(delegate to git-diff)') {|v| diff_opts << "-c"}
+opt.on('--cached', '--staged', '(delegate to git-diff)') {|v| use_cached = "--cached"}
+
 opt.on('--no-rename', '(delegate to git-diff)') {|v| diff_opts << "--no-renames"}
 opt.on('-B[<n>][/<m>]', '--break-rewrites[=[<n>][/<m>]]', '(delegate to git-diff)') {|v| diff_opts << "-B#{v}"}
 opt.on('-M[<n>]', '--find-renames[=[<n>]]', '(delegate to git-diff)') {|v| diff_opts << "-M#{v}"}
@@ -67,7 +69,7 @@ if revision.to_i.to_s == revision and revision.length < MIN_HASH_ABBR
   revision = "#{rev}..#{previous}"
 end
 
-files = %x{git diff --name-only #{revision} #{extra_diff_args}}.chomp
+files = %x{git diff --name-only #{revision} #{use_cached} #{extra_diff_args}}.chomp
 count = files.lines.to_a.length
 
 if count > MAX_FILES
@@ -80,7 +82,7 @@ if count > MAX_FILES
 end
 
 if count > 0
-  system("vim -p #{files.gsub(/\n/, ' ')} -c 'tabdo GitDiff #{revision}' -c 'tabfirst'")
+  system("vim -p #{files.gsub(/\n/, ' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
 else
   puts '# Changes outside this directory are ignored' if %x(git rev-parse --show-prefix) != ''
   puts 'no differences'
