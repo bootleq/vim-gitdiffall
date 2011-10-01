@@ -6,32 +6,32 @@ Version = '0.0.1'
 MAX_FILES = 14
 MIN_HASH_ABBR = 5
 
-opt =  OptionParser.new
+opt = OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
+common_opt_desc = '(delegate to git)'
 
-revision, diff_opts, pathes = '', [], ''
-use_cached = ''
+revision, use_cached, diff_opts, pathes = '', '', [], ''
 
-opt.on('--cached', '--staged', '(delegate to git-diff)') {|v| use_cached = "--cached"}
+opt.on('--cached', '--staged', common_opt_desc) {|v| use_cached = "--cached"}
 
-opt.on('--no-renames', '(delegate to git-diff)') {|v| diff_opts << "--no-renames"}
-opt.on('-B[<n>][/<m>]', '--break-rewrites[=[<n>][/<m>]]', '(delegate to git-diff)') {|v| diff_opts << "-B#{v}"}
-opt.on('-M[<n>]', '--find-renames[=[<n>]]', '(delegate to git-diff)') {|v| diff_opts << "-M#{v}"}
-opt.on('-C[<n>]', '--find-copies[=[<n>]]', '(delegate to git-diff)') {|v| diff_opts << "-C#{v}"}
-opt.on('--find-copies-harder', '(delegate to git-diff)') {|v| diff_opts << "--find-copies-harder"}
-opt.on('-D', '--irreversible-delete', '(delegate to git-diff)') {|v| diff_opts << "-D"}
-opt.on('-l num', '(delegate to git-diff)') {|v| diff_opts << "-l #{v}"}
-opt.on('--diff-filter=filter', '(delegate to git-diff)') {|v| diff_opts << "--diff-filter=#{v}"}
-opt.on('-S[string]', '(delegate to git-diff)') {|v| diff_opts << "-S#{v}"}
-opt.on('-G[regex]', '(delegate to git-diff)') {|v| diff_opts << "-G#{v}"}
-opt.on('--pickaxe', '(delegate to git-diff)') {|v| diff_opts << "--pickaxe"}
-opt.on('-O[orderfile]', '(delegate to git-diff)') {|v| diff_opts << "-O#{v}"}
-opt.on('-R', '(delegate to git-diff)') {|v| diff_opts << "-R"}
-opt.on('--relative[=path]', '(delegate to git-diff)') {|v| diff_opts << "--relative=#{v}"}
-opt.on('-a', '--text', '(delegate to git-diff)') {|v| diff_opts << "-a"}
-opt.on('-b', '--ignore-space-change', '(delegate to git-diff)') {|v| diff_opts << "-b"}
-opt.on('-w', '--ignore-all-space', '(delegate to git-diff)') {|v| diff_opts << "-w"}
-opt.on('--ignore-submodules[=<when>', '(delegate to git-diff)') {|v| diff_opts << "--ignore-submodules"}
+opt.on('--no-renames', common_opt_desc)                                    {|v| diff_opts << "--no-renames"}
+opt.on('-B[<n>][/<m>]', '--break-rewrites[=[<n>][/<m>]]', common_opt_desc) {|v| diff_opts << "-B#{v}"}
+opt.on('-M[<n>]', '--find-renames[=[<n>]]', common_opt_desc)               {|v| diff_opts << "-M#{v}"}
+opt.on('-C[<n>]', '--find-copies[=[<n>]]', common_opt_desc)                {|v| diff_opts << "-C#{v}"}
+opt.on('--find-copies-harder', common_opt_desc)                            {|v| diff_opts << "--find-copies-harder"}
+opt.on('-D', '--irreversible-delete', common_opt_desc)                     {|v| diff_opts << "-D"}
+opt.on('-l num', common_opt_desc)                                          {|v| diff_opts << "-l #{v}"}
+opt.on('--diff-filter=filter', common_opt_desc)                            {|v| diff_opts << "--diff-filter=#{v}"}
+opt.on('-S[string]', common_opt_desc)                                      {|v| diff_opts << "-S#{v}"}
+opt.on('-G[regex]', common_opt_desc)                                       {|v| diff_opts << "-G#{v}"}
+opt.on('--pickaxe', common_opt_desc)                                       {|v| diff_opts << "--pickaxe"}
+opt.on('-O[orderfile]', common_opt_desc)                                   {|v| diff_opts << "-O#{v}"}
+opt.on('-R', common_opt_desc)                                              {|v| diff_opts << "-R"}
+opt.on('--relative[=path]', common_opt_desc)                               {|v| diff_opts << "--relative=#{v}"}
+opt.on('-a', '--text', common_opt_desc)                                    {|v| diff_opts << "-a"}
+opt.on('-b', '--ignore-space-change', common_opt_desc)                     {|v| diff_opts << "-b"}
+opt.on('-w', '--ignore-all-space', common_opt_desc)                        {|v| diff_opts << "-w"}
+opt.on('--ignore-submodules[=<when>', common_opt_desc)                     {|v| diff_opts << "--ignore-submodules"}
 
 pathes = ARGV.slice!(ARGV.index('--'), ARGV.length).join(' ') if ARGV.index('--')
 opt.parse!(ARGV)
