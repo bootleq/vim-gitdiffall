@@ -12,6 +12,12 @@ let s:DIFF_OPTION_KEYS = [
 
 let s:COMPLETE_HASH_SIZE = 30
 let s:REV_UNDEFINED = -1
+let s:OPTIONS = [
+      \   '--cached',
+      \   '--no-renames', '--diff-filter=',
+      \   '-S', '-G',
+      \   '--ignore-space-change', '--ignore-all-space', '--ignore-submodules',
+      \ ]
 
 " }}} Constants
 
@@ -144,6 +150,10 @@ endfunction "}}}
 " Complete Functions: {{{
 
 function! gitdiffall#complete(arglead, cmdline, cursorpos) "{{{
+  if type(a:arglead) == type(0) || stridx(a:arglead, '-') == 0
+    return join(s:OPTIONS, "\n")
+  endif
+
   let recent_size = 10
   let hash_size = s:COMPLETE_HASH_SIZE
   let objects = s:complete_cache()
@@ -164,10 +174,10 @@ function! gitdiffall#complete(arglead, cmdline, cursorpos) "{{{
   let s:git_toplevel = git_toplevel
 
   let candidates = 
-        \   objects.recent +
-        \   objects.default +
-        \   objects.tags +
-        \   objects.hashes
+        \ objects.recent +
+        \ objects.default +
+        \ objects.tags +
+        \ objects.hashes
 
   return join(s:uniq(candidates), "\n")
 endfunction "}}}

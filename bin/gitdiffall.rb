@@ -14,7 +14,7 @@ use_cached = ''
 
 opt.on('--cached', '--staged', '(delegate to git-diff)') {|v| use_cached = "--cached"}
 
-opt.on('--no-rename', '(delegate to git-diff)') {|v| diff_opts << "--no-renames"}
+opt.on('--no-renames', '(delegate to git-diff)') {|v| diff_opts << "--no-renames"}
 opt.on('-B[<n>][/<m>]', '--break-rewrites[=[<n>][/<m>]]', '(delegate to git-diff)') {|v| diff_opts << "-B#{v}"}
 opt.on('-M[<n>]', '--find-renames[=[<n>]]', '(delegate to git-diff)') {|v| diff_opts << "-M#{v}"}
 opt.on('-C[<n>]', '--find-copies[=[<n>]]', '(delegate to git-diff)') {|v| diff_opts << "-C#{v}"}
