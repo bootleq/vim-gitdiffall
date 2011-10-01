@@ -292,7 +292,7 @@ function! s:chomp(string, ...) "{{{
 endfunction "}}}
 
 
-function! Uniq(list) "{{{
+function! s:uniq(list) "{{{
   let list = []
   for i in a:list
     if index(list, i) < 0
