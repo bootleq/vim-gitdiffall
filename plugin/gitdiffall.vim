@@ -9,7 +9,7 @@ set cpoptions&vim
 " Interface: {{{
 
 if !exists('*GitDiff')
-  command -nargs=? -complete=custom,gitdiffall#complete GitDiff call gitdiffall#diff([<f-args>])
+  command -nargs=* -complete=custom,gitdiffall#complete GitDiff call gitdiffall#diff([<f-args>])
 endif
 
 if !exists('*GitDiffInfo')

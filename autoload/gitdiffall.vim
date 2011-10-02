@@ -11,6 +11,13 @@ let s:DIFF_OPTION_KEYS = [
       \ ]
 
 let s:COMPLETE_HASH_SIZE = 30
+let s:REV_UNDEFINED = -1
+let s:OPTIONS = [
+      \   '--cached',
+      \   '--no-renames', '--diff-filter=',
+      \   '-S', '-G',
+      \   '--ignore-space-change', '--ignore-all-space', '--ignore-submodules',
+      \ ]
 
 " }}} Constants
 
@@ -23,52 +30,29 @@ function! gitdiffall#diff(args) "{{{
     return
   endif
 
-  let range = empty(a:args) ? '' : a:args[0]
-  let MIN_HASH_ABBR = 5
-  call insert(s:complete_cache().recent, range)
-
-  if stridx(range, '..') != -1
-    let [begin_rev, rev] = split(range, '\V..', 1)
-  elseif range =~ '^@\w'
-    let rev = s:shortcut_for_commit(range)
-    echo printf("Shortcut for this commit is %s.", rev)
-  else
-    let rev = range
-  endif
-
-  if string(str2nr(rev)) == rev && len(string(rev)) < MIN_HASH_ABBR
-    let begin_rev = system('git log -1 --skip=' . rev . ' --format=format:"%h"')
-    let rev = system('git log -1 --skip=' . (rev + 1) . ' --format=format:"%h"')
-  endif
+  let [revision, use_cached, diff_opts, pathes] = s:parse_options(a:args)
+  let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, pathes)
 
   let save_file = expand('%')
   let save_filetype = &filetype
-  let save_dir = getcwd()
-  let new_dir = fnameescape(expand('%:p:h'))
-  let cd_command = haslocaldir() ? 'lcd' : 'cd'
   call s:save_diff_options()
 
-  if isdirectory(new_dir)
-    execute cd_command . " " . new_dir
-  endif
-
+  call s:cd_to_current_head()
   let prefix = substitute(system("git rev-parse --show-prefix"), '\n$', '', '')
-  let filepath = expand('%:.')
+  let relative_path = expand('%:.')
 
-  let rev_content = s:get_content(rev, prefix . filepath)
-  if exists('begin_rev')
-    let begin_rev_content = s:get_content(begin_rev, prefix . filepath)
+  let rev_content = s:get_content(rev, prefix . relative_path)
+  if begin_rev != s:REV_UNDEFINED
+    let begin_rev_content = s:get_content(begin_rev, prefix . relative_path)
   endif
-  execute cd_command . " " . save_dir
+  call s:cd_to_original()
 
-  redraw!
-
-  if exists('begin_rev')
+  if begin_rev != s:REV_UNDEFINED
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(
           \   printf(
           \     '%s (%s)',
-          \     prefix . filepath,
+          \     prefix . relative_path,
           \     begin_rev
           \   )
           \ ), ' \')
@@ -79,20 +63,22 @@ function! gitdiffall#diff(args) "{{{
   silent execute 'file ' . escape(s:uniq_bufname(
         \   printf(
         \     '%s (%s)',
-        \     prefix . '[git diff] ' . filepath,
+        \     prefix . '[git diff] ' . relative_path,
         \     rev
         \   )
         \ ), ' \')
   call s:fill_buffer(rev_content, save_filetype)
 
-  if rev_content.success && (!exists('begin_rev') || begin_rev_content.success)
+  if rev_content.success && (begin_rev == s:REV_UNDEFINED || begin_rev_content.success)
     windo diffthis
   endif
   wincmd p
 
   let t:gitdiffall_info = {
-        \   'args': empty(a:args) ? '' : a:args[0],
-        \   'begin_rev': exists('begin_rev') ? begin_rev : 0,
+        \   'args': empty(a:args) ? '' : join(a:args),
+        \   'diff_opts': diff_opts,
+        \   'pathes': pathes,
+        \   'begin_rev': begin_rev,
         \   'rev': rev,
         \   'file': save_file,
         \ }
@@ -106,17 +92,24 @@ function! gitdiffall#info(args) "{{{
   endif
 
   let key = empty(a:args) ? 'default' : a:args[0]
-  let [begin_rev, rev] = [t:gitdiffall_info.begin_rev, t:gitdiffall_info.rev]
   let info = t:gitdiffall_info
+  let [begin_rev, rev] = [info.begin_rev, info.rev]
 
   if !has_key(info, key)
     if key == 'default'
-      let info[key] = system('git log -1 ' . (empty(begin_rev) ? rev : begin_rev))
+      let info[key] = system(printf(
+            \   'git log -1 %s %s -- %s',
+            \   begin_rev == s:REV_UNDEFINED ? rev : begin_rev,
+            \   info.diff_opts,
+            \   info.pathes
+            \ ))
     elseif key == 'logs'
-      let info[key] = system(
-            \   "git log "
-            \   . (empty(begin_rev) ? (rev . '..') : (rev . '..' . begin_rev))
-            \ )
+      let info[key] = system(printf(
+            \   'git log %s %s -- %s',
+            \   begin_rev == s:REV_UNDEFINED ? (rev . '..') : (rev . '..' . begin_rev),
+            \   info.diff_opts,
+            \   info.pathes
+            \ ))
     endif
   endif
 
@@ -127,7 +120,7 @@ function! gitdiffall#info(args) "{{{
           \   'GitDiff: ',
           \   info.args,
           \   "        ",
-          \   (empty(begin_rev) ? '(wip)' : begin_rev) . " " . rev,
+          \   (begin_rev == s:REV_UNDEFINED ? '(wip)' : begin_rev) . " " . rev,
           \   "\n\n",
           \   info[key],
           \ ], '')
@@ -157,6 +150,10 @@ endfunction "}}}
 " Complete Functions: {{{
 
 function! gitdiffall#complete(arglead, cmdline, cursorpos) "{{{
+  if type(a:arglead) == type(0) || stridx(a:arglead, '-') == 0
+    return join(s:OPTIONS, "\n")
+  endif
+
   let recent_size = 10
   let hash_size = s:COMPLETE_HASH_SIZE
   let objects = s:complete_cache()
@@ -177,10 +174,10 @@ function! gitdiffall#complete(arglead, cmdline, cursorpos) "{{{
   let s:git_toplevel = git_toplevel
 
   let candidates = 
-        \   objects.recent +
-        \   objects.default +
-        \   objects.tags +
-        \   objects.hashes
+        \ objects.recent +
+        \ objects.default +
+        \ objects.tags +
+        \ objects.hashes
 
   return join(s:uniq(candidates), "\n")
 endfunction "}}}
@@ -208,20 +205,41 @@ endfunction "}}}
 " }}} Complete Functions
 
 
-" Utils: {{{
+" Git Operations: {{{
 
-function! s:shortcut_for_commit(rev) "{{{
-  return len(
+function! s:merge_base_of(begin_rev, rev) "{{{
+  let rev = system('git merge-base ' . a:begin_rev . ' ' . a:rev)[0:6])
+  call s:throw_shell_error()
+  return rev[0:6]
+endfunction "}}}
+
+
+function! s:shortcut_for_commit(rev, ...) "{{{
+  let option_args = a:0 ? a:1 : []
+  let path_args = a:0 > 1 ? a:2 : []
+  let shortcut = len(
         \   split(
-        \     system('git log --format=format:"%h" ' . strpart(a:rev, 1) . '..'),
+        \     system(printf(
+        \       'git log --format=format:"%s" %s.. %s -- %s',
+        \       '%h',
+        \       strpart(a:rev, 1),
+        \       join(option_args),
+        \       join(path_args),
+        \     ),
         \   )
         \ )
+  call s:throw_shell_error()
+  return shortcut
 endfunction "}}}
 
 
 function! s:get_content(rev, file) "{{{
-  " TODO :<n>:<path>, see gitrevisions(7)
-  let result = system("git show " . (empty(a:rev) ? 'HEAD' : a:rev) . ":" . shellescape(a:file))
+  " TODO use :<n>:<path> as rev, see gitrevisions(7)
+  let result = system(printf(
+        \   "git show %s:%s",
+        \   a:rev,
+        \   shellescape(a:file)
+        \ ))
   if v:shell_error
     let result = substitute(result, '[\n]', ' ', 'g')
   endif
@@ -229,6 +247,72 @@ function! s:get_content(rev, file) "{{{
         \   'text': result,
         \   'success': !v:shell_error
         \ }
+endfunction "}}}
+
+" }}} Git Operations
+
+
+" Utils: {{{
+
+function! s:parse_options(args) "{{{
+  let end_of_opts = index(a:args, '--')
+  let pathes = end_of_opts < 0 ? [] : a:args[(end_of_opts + 1):]
+  let other_args = end_of_opts < 0 ? a:args : a:args[:max([0, end_of_opts - 1])]
+
+  let revision = []
+  let diff_opts = []
+  let use_cached = 0
+  for arg in other_args
+    if arg =~ '^-'
+      if arg == '--cached' || arg == '--staged'
+        let use_cached = 1
+      else
+        call add(diff_opts, arg)
+      endif
+    elseif empty(diff_opts)
+      call add(revision, arg)
+    endif
+  endfor
+  if len(revision) > 1
+    let revision = [split(revision[0], '\V..', 1)[0], split(revision[-1], '\V..', 1)[-1]]
+  endif
+  return [
+        \   join(revision),
+        \   use_cached,
+        \   join(diff_opts),
+        \   join(pathes)
+        \ ]
+endfunction "}}}
+
+
+function! s:parse_revision(revision, use_cached, ...) "{{{
+  let diff_opts = a:0 ? a:1 : []
+  let pathes = a:0 > 1 ? a:2 : []
+  let begin_rev = s:REV_UNDEFINED
+  let rev = a:revision
+
+  let MIN_HASH_ABBR = 5
+  call insert(s:complete_cache().recent, a:revision)
+
+  if a:use_cached
+    let begin_rev = ''
+    let rev = 'HEAD'
+  elseif stridx(a:revision, '...') != -1
+    let [begin_rev, rev] = split(a:revision, '\V...', 1)
+    let begin_rev = s:merge_base_of(begin_rev, rev)
+  elseif stridx(a:revision, '..') != -1
+    let [begin_rev, rev] = split(a:revision, '\V..', 1)
+  elseif a:revision =~ '^@\w'
+    let rev = s:shortcut_for_commit(a:revision, diff_opts, pathes)
+    echo printf("Shortcut for this commit is %s.", rev)
+  endif
+
+  if string(str2nr(rev)) == rev && len(string(rev)) < MIN_HASH_ABBR
+    let begin_rev = system('git log -1 --skip=' . rev . ' --format=format:"%h"')
+    let rev = system('git log -1 --skip=' . (rev + 1) . ' --format=format:"%h"')
+  endif
+
+  return [begin_rev, rev]
 endfunction "}}}
 
 
@@ -259,6 +343,31 @@ function! s:restore_diff_options() "{{{
             \ )
     endfor
     unlet b:save_diff_options
+  endif
+endfunction "}}}
+
+
+function! s:cd_to_current_head() "{{{
+  let s:save_dir = getcwd()
+  let new_dir = fnameescape(expand('%:p:h'))
+  let cd_command = haslocaldir() ? 'lcd' : 'cd'
+  if isdirectory(new_dir)
+    execute cd_command . " " . new_dir
+  endif
+endfunction "}}}
+
+
+function! s:cd_to_original() "{{{
+  let cd_command = haslocaldir() ? 'lcd' : 'cd'
+  execute cd_command . " " . s:save_dir
+endfunction "}}}
+
+
+function! s:throw_shell_error() "{{{
+  if v:shell_error
+    throw "gitdiffall:shell_exception: " . v:exception . " -- " . v:throwpoint
+  else
+    return 0
   endif
 endfunction "}}}
 
