@@ -30,8 +30,8 @@ function! gitdiffall#diff(args) "{{{
     return
   endif
 
-  let [revision, use_cached, diff_opts, pathes] = s:parse_options(a:args)
-  let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, pathes)
+  let [revision, use_cached, diff_opts, paths] = s:parse_options(a:args)
+  let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, paths)
 
   let save_file = expand('%')
   let save_filetype = &filetype
@@ -77,7 +77,7 @@ function! gitdiffall#diff(args) "{{{
   let t:gitdiffall_info = {
         \   'args': empty(a:args) ? '' : join(a:args),
         \   'diff_opts': diff_opts,
-        \   'pathes': pathes,
+        \   'paths': paths,
         \   'begin_rev': begin_rev,
         \   'rev': rev,
         \   'file': save_file,
@@ -101,14 +101,14 @@ function! gitdiffall#info(args) "{{{
             \   'git log -1 %s %s -- %s',
             \   begin_rev == s:REV_UNDEFINED ? rev : begin_rev,
             \   info.diff_opts,
-            \   info.pathes
+            \   info.paths
             \ ))
     elseif key == 'logs'
       let info[key] = system(printf(
             \   'git log %s %s -- %s',
             \   begin_rev == s:REV_UNDEFINED ? (rev . '..') : (rev . '..' . begin_rev),
             \   info.diff_opts,
-            \   info.pathes
+            \   info.paths
             \ ))
     endif
   endif
@@ -256,7 +256,7 @@ endfunction "}}}
 
 function! s:parse_options(args) "{{{
   let end_of_opts = index(a:args, '--')
-  let pathes = end_of_opts < 0 ? [] : a:args[(end_of_opts + 1):]
+  let paths = end_of_opts < 0 ? [] : a:args[(end_of_opts + 1):]
   let other_args = end_of_opts < 0 ? a:args : a:args[:max([0, end_of_opts - 1])]
 
   let revision = []
@@ -280,14 +280,14 @@ function! s:parse_options(args) "{{{
         \   join(revision),
         \   use_cached,
         \   join(diff_opts),
-        \   join(pathes)
+        \   join(paths)
         \ ]
 endfunction "}}}
 
 
 function! s:parse_revision(revision, use_cached, ...) "{{{
   let diff_opts = a:0 ? a:1 : []
-  let pathes = a:0 > 1 ? a:2 : []
+  let paths = a:0 > 1 ? a:2 : []
   let begin_rev = s:REV_UNDEFINED
   let rev = a:revision
 
@@ -303,7 +303,7 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
   elseif stridx(a:revision, '..') != -1
     let [begin_rev, rev] = split(a:revision, '\V..', 1)
   elseif a:revision =~ '^@\w'
-    let rev = s:shortcut_for_commit(a:revision, diff_opts, pathes)
+    let rev = s:shortcut_for_commit(a:revision, diff_opts, paths)
     echo printf("Shortcut for this commit is %s.", rev)
   endif
 

@@ -10,7 +10,7 @@ opt = OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
 common_opt_desc = '(delegate to git)'
 
-revision, use_cached, diff_opts, pathes = '', '', [], ''
+revision, use_cached, diff_opts, paths = '', '', [], ''
 
 opt.on('--cached', '--staged', common_opt_desc) {|v| use_cached = "--cached"}
 
@@ -33,7 +33,7 @@ opt.on('-b', '--ignore-space-change', common_opt_desc)                     {|v| 
 opt.on('-w', '--ignore-all-space', common_opt_desc)                        {|v| diff_opts << "-w"}
 opt.on('--ignore-submodules[=<when>', common_opt_desc)                     {|v| diff_opts << "--ignore-submodules"}
 
-pathes = ARGV.slice!(ARGV.index('--'), ARGV.length).join(' ') if ARGV.index('--')
+paths = ARGV.slice!(ARGV.index('--'), ARGV.length).join(' ') if ARGV.index('--')
 opt.parse!(ARGV)
 revision = ARGV.join(' ')
 
@@ -50,7 +50,7 @@ elsif $?.exitstatus != 0
   abort
 end
 
-extra_diff_args = "#{diff_opts.join(' ')} #{pathes}"
+extra_diff_args = "#{diff_opts.join(' ')} #{paths}"
 
 if String(revision).match(/^@\w+/)
   logs = %x(git log --format=format:"_" #{revision[1..-1]}.. #{extra_diff_args})
