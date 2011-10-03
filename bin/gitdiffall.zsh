@@ -16,6 +16,7 @@ function _gitdiffall () {
   typeset -A opt_args
 
   arguments=(
+    '(--cached --staged)'{--cached,--staged}
     '--no-renames'
     '--diff-filter=-:: :_guard "[ACDMRTUXB*]#"'
     '--relative=-:: :_directories'
