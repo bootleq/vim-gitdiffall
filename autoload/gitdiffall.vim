@@ -53,7 +53,7 @@ function! gitdiffall#diff(args) "{{{
           \   printf(
           \     '%s (%s)',
           \     prefix . relative_path,
-          \     begin_rev
+          \     use_cached ? 'staged' : begin_rev
           \   )
           \ ), ' \')
     call s:fill_buffer(begin_rev_content, save_filetype)
