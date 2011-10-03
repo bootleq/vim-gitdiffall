@@ -26,7 +26,7 @@ let s:OPTIONS = [
 
 function! gitdiffall#diff(args) "{{{
   if exists('t:gitdiffall_info')
-    call gitdiffall#info([])
+    call gitdiffall#info(['log'])
     return
   endif
 
@@ -53,7 +53,7 @@ function! gitdiffall#diff(args) "{{{
           \   printf(
           \     '%s (%s)',
           \     prefix . relative_path,
-          \     begin_rev
+          \     use_cached ? 'staged' : begin_rev
           \   )
           \ ), ' \')
     call s:fill_buffer(begin_rev_content, save_filetype)
@@ -91,12 +91,12 @@ function! gitdiffall#info(args) "{{{
     return
   endif
 
-  let key = empty(a:args) ? 'default' : a:args[0]
+  let key = empty(a:args) ? 'logs' : a:args[0]
   let info = t:gitdiffall_info
   let [begin_rev, rev] = [info.begin_rev, info.rev]
 
   if !has_key(info, key)
-    if key == 'default'
+    if key == 'log'
       let info[key] = system(printf(
             \   'git log -1 %s %s -- %s',
             \   begin_rev == s:REV_UNDEFINED ? rev : begin_rev,
@@ -185,7 +185,7 @@ endfunction "}}}
 
 function! gitdiffall#info_complete(arglead, cmdline, cursorpos) "{{{
   return join([
-        \   'logs', 'default',
+        \   'logs', 'log',
         \ ], "\n")
 endfunction "}}}
 
