@@ -52,20 +52,20 @@ end
 
 extra_diff_args = "#{diff_opts.join(' ')} #{paths}"
 
-if String(revision).match(/^@\w+/)
-  logs = %x(git log --format=format:"_" #{revision[1..-1]}.. #{extra_diff_args})
-  if logs == ''
-    puts 'no differences'
+if String(revision).match(/^@\w+$/)
+  shortcut = %x(git log --format=format:"%H" #{extra_diff_args} | grep #{revision[1..-1]} --max-count=1 --line-number)[/\d+/]
+  if shortcut.nil?
+    puts "unknown revesion #{revision[1..-1]}"
     abort
   end
 
-  revision = logs.lines.to_a.length.to_s
+  revision = shortcut
   puts "Shortcut for this commit is #{revision}.\n\n"
 end
 
 if revision.to_i.to_s == revision and revision.length < MIN_HASH_ABBR
-  rev = %x(git log -1 --skip=#{revision} --format=format:"%h" #{extra_diff_args})
-  previous = %x(git log -1 --skip=#{revision.to_i + 1} --format=format:"%h" #{extra_diff_args})
+  rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
+  previous = %x(git log -1 --skip=#{revision} --format=format:"%h" #{extra_diff_args})
   revision = "#{rev}..#{previous}"
 end
 
