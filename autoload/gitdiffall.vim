@@ -215,17 +215,17 @@ endfunction "}}}
 
 
 function! s:shortcut_for_commit(rev, ...) "{{{
-  let option_args = a:0 ? a:1 : []
-  let path_args = a:0 > 1 ? a:2 : []
+  let option_args = a:0 ? a:1 : ''
+  let path_args = a:0 > 1 ? a:2 : ''
   let shortcut = len(
         \   split(
         \     system(printf(
         \       'git log --format=format:"%s" %s.. %s -- %s',
         \       '%h',
         \       strpart(a:rev, 1),
-        \       join(option_args),
-        \       join(path_args),
-        \     ),
+        \       option_args,
+        \       path_args,
+        \     )),
         \   )
         \ )
   call s:throw_shell_error()
