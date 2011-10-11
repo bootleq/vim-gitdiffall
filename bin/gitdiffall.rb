@@ -84,6 +84,5 @@ end
 if count > 0
   system("vim -p #{files.gsub(/\n/, ' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
 else
-  puts '# Changes outside this directory are ignored' if %x(git rev-parse --show-prefix) != ''
   puts 'no differences'
 end
