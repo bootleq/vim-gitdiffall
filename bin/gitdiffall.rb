@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
+require 'pathname'
 Version = '0.0.1'
 
 MAX_FILES = 14
@@ -82,7 +83,15 @@ if count > MAX_FILES
 end
 
 if count > 0
-  system("vim -p #{files.gsub(/\n/, ' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
+  pwd = Pathname.pwd
+  toplevel = Pathname.new %x(git rev-parse --show-toplevel).chomp
+  prefix = Pathname.new %x(git rev-parse --show-prefix).chomp
+
+  args = files.split.map {|file|
+    (toplevel + file).relative_path_from(toplevel + pwd)
+  }.to_a
+
+  system("vim -p #{args.join(' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
 else
   puts 'no differences'
 end
