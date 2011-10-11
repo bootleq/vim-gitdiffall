@@ -31,7 +31,16 @@ function! gitdiffall#diff(args) "{{{
   endif
 
   let [revision, use_cached, diff_opts, paths] = s:parse_options(a:args)
-  let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, paths)
+
+  try
+    let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, paths)
+  catch /^gitdiffall:/
+    echoerr printf("%s (%s)",
+          \   substitute(v:exception, '^gitdiffall:', '', ''),
+          \   v:throwpoint
+          \ )
+    return
+  endtry
 
   let save_file = expand('%')
   let save_filetype = &filetype
@@ -217,18 +226,20 @@ endfunction "}}}
 function! s:shortcut_for_commit(rev, ...) "{{{
   let option_args = a:0 ? a:1 : ''
   let path_args = a:0 > 1 ? a:2 : ''
-  let shortcut = len(
-        \   split(
-        \     system(printf(
-        \       'git log --format=format:"%s" %s.. %s -- %s',
-        \       '%h',
-        \       strpart(a:rev, 1),
-        \       option_args,
-        \       path_args,
-        \     )),
-        \   )
+  let shortcut = matchstr(
+        \   system(printf(
+        \     'git log --format=format:"%s" %s -- %s | grep %s --max-count=1 --line-number',
+        \     '%h',
+        \     option_args,
+        \     path_args,
+        \     a:rev
+        \   )),
+        \   '\v\d+'
         \ )
-  call s:throw_shell_error()
+  if v:shell_error == 1
+    throw "gitdiffall:Unknown revision: " . a:rev
+  endif
+  call s:throw_shell_error(2)
   return shortcut
 endfunction "}}}
 
@@ -302,14 +313,14 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
     let begin_rev = s:merge_base_of(begin_rev, rev)
   elseif stridx(a:revision, '..') != -1
     let [begin_rev, rev] = split(a:revision, '\V..', 1)
-  elseif a:revision =~ '^@\w'
-    let rev = s:shortcut_for_commit(a:revision, diff_opts, paths)
+  elseif a:revision =~ '\v^\@\w+$'
+    let rev = s:shortcut_for_commit(strpart(a:revision, 1), diff_opts, paths)
     echo printf("Shortcut for this commit is %s.", rev)
   endif
 
   if string(str2nr(rev)) == rev && len(string(rev)) < MIN_HASH_ABBR
-    let begin_rev = system('git log -1 --skip=' . rev . ' --format=format:"%h"')
-    let rev = system('git log -1 --skip=' . (rev + 1) . ' --format=format:"%h"')
+    let begin_rev = system('git log -1 --skip=' . (rev - 1) . ' --format=format:"%h"')
+    let rev = system('git log -1 --skip=' . rev . ' --format=format:"%h"')
   endif
 
   return [begin_rev, rev]
@@ -363,9 +374,10 @@ function! s:cd_to_original() "{{{
 endfunction "}}}
 
 
-function! s:throw_shell_error() "{{{
-  if v:shell_error
-    throw "gitdiffall:shell_exception: " . v:exception . " -- " . v:throwpoint
+function! s:throw_shell_error(...) "{{{
+  let code = a:0 ? 2 : 1
+  if v:shell_error >= code
+    throw "gitdiffall:shell exception: " . v:exception . " -- " . v:throwpoint
   else
     return 0
   endif
