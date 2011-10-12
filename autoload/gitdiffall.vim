@@ -47,7 +47,7 @@ function! gitdiffall#diff(args) "{{{
   call s:save_diff_options()
 
   call s:cd_to_current_head()
-  let prefix = substitute(system("git rev-parse --show-prefix"), '\n$', '', '')
+  let prefix = s:get_prefix()
   let relative_path = expand('%:.')
 
   let rev_content = s:get_content(rev, prefix . relative_path)
@@ -220,6 +220,11 @@ function! s:merge_base_of(begin_rev, rev) "{{{
   let rev = system('git merge-base ' . a:begin_rev . ' ' . a:rev)[0:6])
   call s:throw_shell_error()
   return rev[0:6]
+endfunction "}}}
+
+
+function! s:get_prefix() "{{{
+  return substitute(system("git rev-parse --show-prefix"), '\n$', '', '')
 endfunction "}}}
 
 
