@@ -302,8 +302,8 @@ endfunction "}}}
 
 
 function! s:parse_revision(revision, use_cached, ...) "{{{
-  let diff_opts = a:0 ? a:1 : []
-  let paths = a:0 > 1 ? a:2 : []
+  let diff_opts = a:0 ? a:1 : ''
+  let paths = a:0 > 1 ? a:2 : ''
   let begin_rev = s:REV_UNDEFINED
   let rev = a:revision
 
@@ -321,11 +321,24 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
   elseif a:revision =~ '\v^\@\w+$'
     let rev = s:shortcut_for_commit(strpart(a:revision, 1), diff_opts, paths)
     echo printf("Shortcut for this commit is %s.", rev)
+  elseif a:revision =~ '\v\+\d+$'
+    let rev = strpart(a:revision, 1)
+    let paths .= ' ' . expand('%')
   endif
 
   if string(str2nr(rev)) == rev && len(string(rev)) < MIN_HASH_ABBR
-    let begin_rev = system('git log -1 --skip=' . (rev - 1) . ' --format=format:"%h"')
-    let rev = system('git log -1 --skip=' . rev . ' --format=format:"%h"')
+    let begin_rev = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
+          \   rev - 1,
+          \   "%h",
+          \   diff_opts,
+          \   paths
+          \ ))
+    let rev = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
+          \   rev,
+          \   "%h",
+          \   diff_opts,
+          \   paths
+          \ ))
   endif
 
   return [begin_rev, rev]
