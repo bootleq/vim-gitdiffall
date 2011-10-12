@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
+require 'pathname'
 Version = '0.0.1'
 
 MAX_FILES = 14
@@ -10,9 +11,11 @@ opt = OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
 common_opt_desc = '(delegate to git)'
 
-revision, use_cached, diff_opts, paths = '', '', [], ''
+revision, diff_opts, paths = '', [], ''
+use_cached, relative = '', ''
 
 opt.on('--cached', '--staged', common_opt_desc) {|v| use_cached = "--cached"}
+opt.on('--relative[=path]', common_opt_desc) {|v| relative = v; diff_opts << "--relative#{"=#{v}" unless v.nil?}"}
 
 opt.on('--no-renames', common_opt_desc)                                    {|v| diff_opts << "--no-renames"}
 opt.on('-B[<n>][/<m>]', '--break-rewrites[=[<n>][/<m>]]', common_opt_desc) {|v| diff_opts << "-B#{v}"}
@@ -27,7 +30,6 @@ opt.on('-G[regex]', common_opt_desc)                                       {|v| 
 opt.on('--pickaxe', common_opt_desc)                                       {|v| diff_opts << "--pickaxe"}
 opt.on('-O[orderfile]', common_opt_desc)                                   {|v| diff_opts << "-O#{v}"}
 opt.on('-R', common_opt_desc)                                              {|v| diff_opts << "-R"}
-opt.on('--relative[=path]', common_opt_desc)                               {|v| diff_opts << "--relative=#{v}"}
 opt.on('-a', '--text', common_opt_desc)                                    {|v| diff_opts << "-a"}
 opt.on('-b', '--ignore-space-change', common_opt_desc)                     {|v| diff_opts << "-b"}
 opt.on('-w', '--ignore-all-space', common_opt_desc)                        {|v| diff_opts << "-w"}
@@ -82,8 +84,14 @@ if count > MAX_FILES
 end
 
 if count > 0
-  system("vim -p #{files.gsub(/\n/, ' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
+  pwd = Pathname.pwd
+  toplevel = Pathname.new %x(git rev-parse --show-toplevel).chomp
+
+  args = files.split.map {|file|
+    (toplevel + (relative || pwd) + file).relative_path_from(toplevel + pwd)
+  }.to_a
+
+  system("vim -p #{args.join(' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
 else
-  puts '# Changes outside this directory are ignored' if %x(git rev-parse --show-prefix) != ''
   puts 'no differences'
 end
