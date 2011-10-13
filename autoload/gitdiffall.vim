@@ -234,7 +234,7 @@ function! s:shortcut_for_commit(rev, ...) "{{{
   let shortcut = matchstr(
         \   system(printf(
         \     'git log --format=format:"%s" %s -- %s | grep %s --max-count=1 --line-number',
-        \     '%h',
+        \     '%H',
         \     option_args,
         \     path_args,
         \     a:rev
