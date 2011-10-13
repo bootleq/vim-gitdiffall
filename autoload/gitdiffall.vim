@@ -326,7 +326,7 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
     let paths .= ' ' . expand('%')
   endif
 
-  if string(str2nr(rev)) == rev && len(string(rev)) < MIN_HASH_ABBR
+  if string(str2nr(rev)) == rev && len(rev) < MIN_HASH_ABBR
     let begin_rev = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
           \   rev - 1,
           \   "%h",
