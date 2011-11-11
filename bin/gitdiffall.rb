@@ -4,8 +4,10 @@ require 'optparse'
 require 'pathname'
 Version = '0.0.1'
 
+# TODO refactor as options
 MAX_FILES = 14
 MIN_HASH_ABBR = 5
+IGNORE_PATTERN = /\.(png|jpg)\Z/i
 
 opt = OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
@@ -71,9 +73,24 @@ if revision.to_i.to_s == revision and revision.length < MIN_HASH_ABBR
   revision = "#{rev}..#{previous}"
 end
 
-files = %x{git diff --name-only #{revision} #{use_cached} #{extra_diff_args}}.chomp
-count = files.lines.to_a.length
+files = %x{git diff --name-only #{revision} #{use_cached} #{extra_diff_args}}.chomp.split
 
+to_skip, to_keep = files.partition {|file|
+  file.match(IGNORE_PATTERN)
+}
+count = to_skip.length
+if count > 0
+  plural = count > 1 ? 's' : ''
+  puts "File#{plural} to be ignored:"
+  to_skip.each {|f| puts "  #{f}"}
+  print "skip all #{count} file#{plural}? (Y/n) "
+  STDOUT.flush
+  unless STDIN.gets.chomp.downcase == 'n'
+    files = to_keep
+  end
+end
+
+count = files.length
 if count > MAX_FILES
   print "Will open #{count} files, continue? (y/N) "
   STDOUT.flush
@@ -87,7 +104,7 @@ if count > 0
   pwd = Pathname.pwd
   toplevel = Pathname.new %x(git rev-parse --show-toplevel).chomp
 
-  args = files.split.map {|file|
+  args = files.map {|file|
     (toplevel + (relative || pwd) + file).relative_path_from(toplevel + pwd)
   }.to_a
 
