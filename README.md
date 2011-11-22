@@ -41,3 +41,32 @@ For convenience, some special notations are available:
 You can specified `@<rev>` for the oldest commit you care about,  
 the shortcut number `<n>` of that commit will be shown in command line.  
 Later you can use `gitdiffall <n-1>`, `gitdiffall <n-2>`, ..., to walk through every newer commit.
+
+Configuration
+=============
+
+gitdiffall.rb takes configure file from one of the following:
+
+- `~/gitdiffall/config.rb`
+- `~/gitdiffall-config.rb`
+- `{dir_contains_gitdiffall.rb}/gitdiffall/config.rb`
+- `{dir_contains_gitdiffall.rb}/gitdiffall-config.rb`
+
+Supported config items:
+
+- `max_files` (default: 14)  
+  Wait for confirmation before open such many files.
+- `min_hash_abbr` (default: 5)  
+  When performing `gitdiffall <n>`,
+  `<n>` must have this many digits to indicate a hash,
+  otherwise it's a number.
+- `ignore_pattern` (default: `/\.(png|jpg)\Z/i`)  
+  Files match this pattern will not be sent to Vim.
+
+Example `config.rb`:
+
+    CONFIG = {
+      :max_files      => 14,
+      :min_hash_abbr  => 5,
+      :ignore_pattern => /(\.(png|jpg)|-compressed\.js)\Z/i
+    }

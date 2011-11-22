@@ -4,10 +4,21 @@ require 'optparse'
 require 'pathname'
 Version = '0.0.1'
 
-# TODO refactor as options
-MAX_FILES = 14
-MIN_HASH_ABBR = 5
-IGNORE_PATTERN = /\.(png|jpg)\Z/i
+config_path = [
+  '~/gitdiffall/config.rb',
+  '~/gitdiffall-config.rb',
+  (File.dirname(__FILE__) + '/gitdiffall/config.rb'),
+  (File.dirname(__FILE__) + '/gitdiffall-config.rb')
+].find {|path|
+  File.exist?(File.expand_path(path))
+}
+require config_path if config_path
+
+config = ({
+  :max_files      => 14,
+  :min_hash_abbr  => 5,
+  :ignore_pattern => /\.(png|jpg)\Z/i
+}).merge!(defined?(CONFIG) ? CONFIG : {})
 
 opt = OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
@@ -67,7 +78,7 @@ if String(revision).match(/^@\w+$/)
   puts "Shortcut for this commit is #{revision}.\n\n"
 end
 
-if revision.to_i.to_s == revision and revision.length < MIN_HASH_ABBR
+if revision.to_i.to_s == revision and revision.length < config[:min_hash_abbr]
   rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
   previous = %x(git log -1 --skip=#{revision} --format=format:"%h" #{extra_diff_args})
   revision = "#{rev}..#{previous}"
@@ -76,7 +87,7 @@ end
 files = %x{git diff --name-only #{revision} #{use_cached} #{extra_diff_args}}.chomp.split
 
 to_skip, to_keep = files.partition {|file|
-  file.match(IGNORE_PATTERN)
+  file.match(config[:ignore_pattern])
 }
 count = to_skip.length
 if count > 0
@@ -91,7 +102,7 @@ if count > 0
 end
 
 count = files.length
-if count > MAX_FILES
+if count > config[:max_files]
   print "Will open #{count} files, continue? (y/N) "
   STDOUT.flush
   if STDIN.gets.chomp != 'y'
