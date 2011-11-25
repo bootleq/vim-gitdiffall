@@ -54,6 +54,8 @@ gitdiffall.rb takes configure file from one of the following:
 
 Supported config items:
 
+- `editor_cmd` (default: "vim")  
+  Command to execute Vim.
 - `max_files` (default: 14)  
   Wait for confirmation before open such many files.
 - `min_hash_abbr` (default: 5)  
@@ -66,6 +68,7 @@ Supported config items:
 Example `config.rb`:
 
     CONFIG = {
+      :editor_cmd     => "vim -u /some/other/vimrc",
       :max_files      => 14,
       :min_hash_abbr  => 5,
       :ignore_pattern => /(\.(png|jpg)|-compressed\.js)\Z/i

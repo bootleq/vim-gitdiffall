@@ -15,6 +15,7 @@ config_path = [
 require config_path if config_path
 
 config = ({
+  :editor_cmd     => 'vim',
   :max_files      => 14,
   :min_hash_abbr  => 5,
   :ignore_pattern => /\.(png|jpg)\Z/i
@@ -119,7 +120,7 @@ if count > 0
     (toplevel + (relative || pwd) + file).relative_path_from(toplevel + pwd)
   }.to_a
 
-  system("vim -p #{args.join(' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
+  system("#{config[:editor_cmd]} -p #{args.join(' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
 else
   puts 'no differences'
 end
