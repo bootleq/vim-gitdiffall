@@ -145,7 +145,11 @@ function! gitdiffall#diffoff() "{{{
     silent only
 
     if t:gitdiffall_info.file != expand('%')
+      let pos = getpos('.')
       execute 'edit ' . t:gitdiffall_info.file
+      if line("'\"") < 2
+        call setpos('.', pos)
+      endif
     endif
 
     call s:restore_diff_options()
