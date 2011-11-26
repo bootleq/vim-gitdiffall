@@ -2,7 +2,7 @@
 
 require 'optparse'
 require 'pathname'
-Version = '0.0.1'
+Version = '0.1.0'
 
 config_path = [
   '~/gitdiffall/config.rb',
