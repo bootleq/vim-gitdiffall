@@ -257,7 +257,7 @@ function! s:get_content(rev, file) "{{{
   " TODO use :<n>:<path> as rev, see gitrevisions(7)
   let result = system(printf(
         \   "git show %s:%s",
-        \   empty(a:rev) ? 'HEAD' : a:rev,
+        \   a:rev,
         \   shellescape(a:file)
         \ ))
   if v:shell_error
