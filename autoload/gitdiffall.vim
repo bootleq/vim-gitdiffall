@@ -92,6 +92,7 @@ function! gitdiffall#diff(args) "{{{
   let t:gitdiffall_info = {
         \   'args': empty(a:args) ? '' : join(a:args),
         \   'diff_opts': diff_opts,
+        \   'use_cached': use_cached,
         \   'paths': paths,
         \   'begin_rev': begin_rev,
         \   'rev': rev,
@@ -131,12 +132,13 @@ function! gitdiffall#info(args) "{{{
   if !has_key(info, key)
     echo 'Unsupported option "' . key . '", aborted.'
   else
-    " TODO handle `use_cached` option.
+    let begin_rev_display = info.use_cached ? '(staged)' :
+          \ begin_rev == s:REV_UNDEFINED ? '(wip)' : begin_rev
     echo join([
           \   'GitDiff: ',
           \   info.args,
           \   "        ",
-          \   (begin_rev == s:REV_UNDEFINED ? '(wip)' : begin_rev) . " " . rev,
+          \   begin_rev_display . " " . rev,
           \   "\n\n",
           \   info[key],
           \ ], '')
