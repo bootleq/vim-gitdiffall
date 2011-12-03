@@ -50,13 +50,19 @@ function! gitdiffall#diff(args) "{{{
   let prefix = s:get_prefix()
   let relative_path = expand('%:.')
 
-  let rev_content = s:get_content(rev, prefix . relative_path)
-  if begin_rev != s:REV_UNDEFINED
-    let begin_rev_content = s:get_content(begin_rev, prefix . relative_path)
-  endif
+  if use_cached
+    let begin_rev_content = s:get_content(':0', prefix . relative_path)
+    let rev_content = s:get_content(empty(rev) ? 'HEAD' : rev, prefix . relative_path)
+  else
+    if begin_rev != s:REV_UNDEFINED
+      let begin_rev_content = s:get_content(begin_rev, prefix . relative_path)
+    endif
+    let rev_content = s:get_content(rev, prefix . relative_path)
+  end
+
   call s:cd_to_original()
 
-  if begin_rev != s:REV_UNDEFINED
+  if exists('begin_rev_content')
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(
           \   printf(
@@ -86,6 +92,7 @@ function! gitdiffall#diff(args) "{{{
   let t:gitdiffall_info = {
         \   'args': empty(a:args) ? '' : join(a:args),
         \   'diff_opts': diff_opts,
+        \   'use_cached': use_cached,
         \   'paths': paths,
         \   'begin_rev': begin_rev,
         \   'rev': rev,
@@ -125,11 +132,13 @@ function! gitdiffall#info(args) "{{{
   if !has_key(info, key)
     echo 'Unsupported option "' . key . '", aborted.'
   else
+    let begin_rev_display = info.use_cached ? '(staged)' :
+          \ begin_rev == s:REV_UNDEFINED ? '(wip)' : begin_rev
     echo join([
           \   'GitDiff: ',
           \   info.args,
           \   "        ",
-          \   (begin_rev == s:REV_UNDEFINED ? '(wip)' : begin_rev) . " " . rev,
+          \   begin_rev_display . " " . rev,
           \   "\n\n",
           \   info[key],
           \ ], '')
@@ -315,8 +324,7 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
   call insert(s:complete_cache().recent, a:revision)
 
   if a:use_cached
-    let begin_rev = ''
-    let rev = 'HEAD'
+    " don't alter revisions here.
   elseif stridx(a:revision, '...') != -1
     let [begin_rev, rev] = split(a:revision, '\V...', 1)
     let begin_rev = s:merge_base_of(begin_rev, rev)
