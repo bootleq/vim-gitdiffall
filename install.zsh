@@ -8,7 +8,7 @@ else
   echo "Copy scripts to directory:"
   echo "$install_dir\n"
   echo "Continue? (y/N) "
-  echo "# To prevent this prompt, see config/install_dir.example"
+  echo "# To prevent this prompt, see config/install_dir.example.zsh"
   read sure
   if [[ $sure != "y" ]]; then
     echo "Aborded."
