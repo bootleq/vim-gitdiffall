@@ -47,8 +47,8 @@ COMMANDS                                                 *gitdiffall-commands*
 
   Use this to stop GitDiff and back to original buffer.
 
-  Diff options will be restore to original values, rather than reset to
-  defaults like |:diffoff|.
+  Diff options will be restore to their original values, behave like
+  |:diffoff| after Vim 7.4.
 
 ==============================================================================
 REVISIONS                                               *gitdiffall-revisions*

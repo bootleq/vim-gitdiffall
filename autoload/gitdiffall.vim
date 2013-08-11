@@ -44,7 +44,9 @@ function! gitdiffall#diff(args) "{{{
 
   let save_file = expand('%')
   let save_filetype = &filetype
-  call s:save_diff_options()
+  if version < 704
+    call s:save_diff_options()
+  endif
 
   call s:cd_to_current_head()
   let prefix = s:get_prefix()
@@ -161,7 +163,14 @@ function! gitdiffall#diffoff() "{{{
       endif
     endif
 
-    call s:restore_diff_options()
+    if version >= 704
+      if &diff
+        diffoff
+      endif
+    else
+      call s:restore_diff_options()
+    endif
+
     unlet t:gitdiffall_info
   endif
 endfunction "}}}
