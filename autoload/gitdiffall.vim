@@ -112,20 +112,23 @@ function! gitdiffall#info(args) "{{{
   let key = empty(a:args) ? 'logs' : a:args[0]
   let info = t:gitdiffall_info
   let [begin_rev, rev] = [info.begin_rev, info.rev]
+  let format = exists('g:gitdiffall_log_format') ? printf("--format='%s'", g:gitdiffall_log_format) : ''
 
   if !has_key(info, key)
     if key == 'log'
       let info[key] = system(printf(
-            \   'git log -1 %s %s -- %s',
+            \   'git log -1 %s %s %s -- %s',
             \   begin_rev == s:REV_UNDEFINED ? rev : begin_rev,
             \   info.diff_opts,
+            \   format,
             \   info.paths
             \ ))
     elseif key == 'logs'
       let info[key] = system(printf(
-            \   'git log %s %s -- %s',
+            \   'git log %s %s %s -- %s',
             \   begin_rev == s:REV_UNDEFINED ? (rev . '..') : (rev . '..' . begin_rev),
             \   info.diff_opts,
+            \   format,
             \   info.paths
             \ ))
     endif

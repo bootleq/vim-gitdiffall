@@ -10,6 +10,7 @@ CONTENTS                                                 *gitdiffall-contents*
 
     Introduction  .................. |gitdiffall-introduction|
     Commands  ...................... |gitdiffall-commands|
+    Configuration  ................. |gitdiffall-configuration|
     Revisions  ..................... |gitdiffall-revisions|
     External scripts  .............. |gitdiffall-external-scripts|
 
@@ -49,6 +50,17 @@ COMMANDS                                                 *gitdiffall-commands*
 
   Diff options will be restore to their original values, behave like
   |:diffoff| after Vim 7.4.
+
+==============================================================================
+CONFIGURATION                                       *gitdiffall-configuration*
+
+                                                     *g:gitdiffall_log_format*
+g:gitdiffall_log_format            (default: none) ~
+
+  Used by :GitDiffInfo command, will be passed to git-log "--format" option.
+
+  If not set, let git to determine it, usually the default "medium" will be
+  used.
 
 ==============================================================================
 REVISIONS                                               *gitdiffall-revisions*
