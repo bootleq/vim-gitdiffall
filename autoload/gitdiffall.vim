@@ -18,6 +18,11 @@ let s:OPTIONS = [
       \   '-S', '-G',
       \   '--ignore-space-change', '--ignore-all-space', '--ignore-submodules',
       \ ]
+let s:STATUS_ONLY_WIDTH = 16
+let s:STATUS_ONLY_CONTENT = {
+      \   'A': 'file added',
+      \   'D': 'file deleted'
+      \ }
 
 " }}} Constants
 
@@ -53,13 +58,28 @@ function! gitdiffall#diff(args) "{{{
   let relative_path = expand('%:.')
 
   if use_cached
-    let begin_rev_content = s:get_content(':0', prefix . relative_path)
-    let rev_content = s:get_content(empty(rev) ? 'HEAD' : rev, prefix . relative_path)
+    let diff_status = s:get_diff_status('--cached', relative_path)
+    let begin_rev_content = index(['D'], diff_status) > -1 ?
+          \ s:get_diff_status_content(diff_status) :
+          \ s:get_content(':0', prefix . relative_path)
+    let rev_content = index(['A'], diff_status) > -1 ?
+          \ s:get_diff_status_content(diff_status) :
+          \ s:get_content(empty(rev) ? 'HEAD' : rev, prefix . relative_path)
   else
     if begin_rev != s:REV_UNDEFINED
-      let begin_rev_content = s:get_content(begin_rev, prefix . relative_path)
+      let diff_status = s:get_diff_status([begin_rev, rev], relative_path)
+      let begin_rev_content = index(['D'], diff_status) > -1 ?
+            \ s:get_diff_status_content(diff_status) :
+            \ s:get_content(begin_rev, prefix . relative_path)
+    else
+      let diff_status = s:get_diff_status('', relative_path)
     endif
-    let rev_content = s:get_content(rev, prefix . relative_path)
+    if index(['D'], diff_status) > -1
+      let begin_rev_content = s:get_diff_status_content(diff_status)
+    endif
+    let rev_content = index(['A'], diff_status) > -1 ?
+          \ s:get_diff_status_content(diff_status) :
+          \ s:get_content(rev, prefix . relative_path)
   end
 
   call s:cd_to_original()
@@ -70,13 +90,22 @@ function! gitdiffall#diff(args) "{{{
           \   printf(
           \     '%s (%s)',
           \     prefix . relative_path,
-          \     use_cached ? 'staged' : begin_rev
+          \     use_cached ?
+          \       'staged' :
+          \       (begin_rev == s:REV_UNDEFINED ? diff_status : begin_rev)
           \   )
           \ ), ' \')
     call s:fill_buffer(begin_rev_content, save_filetype)
   endif
 
   execute 'vertical new'
+
+  if exists('begin_rev_content') && begin_rev_content.no_file
+    execute 'wincmd p | vertical resize ' . s:STATUS_ONLY_WIDTH . ' | wincmd p'
+  elseif rev_content.no_file
+    execute 'vertical resize ' . s:STATUS_ONLY_WIDTH
+  endif
+
   silent execute 'file ' . escape(s:uniq_bufname(
         \   printf(
         \     '%s (%s)',
@@ -86,7 +115,10 @@ function! gitdiffall#diff(args) "{{{
         \ ), ' \')
   call s:fill_buffer(rev_content, save_filetype)
 
-  if rev_content.success && (begin_rev == s:REV_UNDEFINED || begin_rev_content.success)
+  if rev_content.success && !rev_content.no_file &&
+        \ exists('begin_rev_content') ?
+        \   (!begin_rev_content.no_file && begin_rev_content.success) :
+        \   (begin_rev == s:REV_UNDEFINED)
     windo diffthis
   endif
   wincmd p
@@ -274,6 +306,26 @@ function! s:shortcut_for_commit(rev, ...) "{{{
 endfunction "}}}
 
 
+function! s:get_diff_status(revs, path) "{{{
+  if type(a:revs) == type([])
+    let compare = printf(
+          \   '%s..%s',
+          \   get(a:revs, 1),
+          \   get(a:revs, 0)
+          \ )
+  else
+    let compare = a:revs
+  endif
+
+  let result = system(printf(
+        \   "git diff --name-status %s -- %s",
+        \   compare,
+        \   a:path
+        \ ))
+  return result[0]
+endfunction "}}}
+
+
 function! s:get_content(rev, file) "{{{
   " TODO use :<n>:<path> as rev, see gitrevisions(7)
   let result = system(printf(
@@ -286,7 +338,8 @@ function! s:get_content(rev, file) "{{{
   endif
   return {
         \   'text': result,
-        \   'success': !v:shell_error
+        \   'success': !v:shell_error,
+        \   'no_file': 0
         \ }
 endfunction "}}}
 
@@ -397,6 +450,21 @@ function! s:restore_diff_options() "{{{
     endfor
     unlet b:save_diff_options
   endif
+endfunction "}}}
+
+
+function! s:get_diff_status_content(status) "{{{
+  if has_key(s:STATUS_ONLY_CONTENT, a:status)
+    let content = printf(
+          \   "\n- Nothing -\n\n(%s)",
+          \   get(s:STATUS_ONLY_CONTENT, a:status, '')
+          \ )
+  endif
+  return {
+        \   'text': content,
+        \   'success': !empty(content),
+        \   'no_file': 1
+        \ }
 endfunction "}}}
 
 
