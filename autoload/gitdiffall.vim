@@ -38,7 +38,7 @@ function! gitdiffall#diff(args) "{{{
   let [revision, use_cached, diff_opts, paths] = s:parse_options(a:args)
 
   try
-    let [begin_rev, rev] = s:parse_revision(revision, use_cached, diff_opts, paths)
+    let [rev_at, rev_aside] = s:parse_revision(revision, use_cached, diff_opts, paths)
   catch /^gitdiffall:/
     echoerr printf("%s (%s)",
           \   substitute(v:exception, '^gitdiffall:', '', ''),
@@ -59,32 +59,34 @@ function! gitdiffall#diff(args) "{{{
 
   if use_cached
     let diff_status = s:get_diff_status('--cached', relative_path)
-    let begin_rev_content = index(['D'], diff_status) > -1 ?
+    let rev_at_content = index(['D'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
           \ s:get_content(':0', prefix . relative_path)
-    let rev_content = index(['A'], diff_status) > -1 ?
+    let rev_aside_content = index(['A'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(empty(rev) ? 'HEAD' : rev, prefix . relative_path)
+          \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, prefix . relative_path)
   else
-    if begin_rev != s:REV_UNDEFINED
-      let diff_status = s:get_diff_status([begin_rev, rev], relative_path)
-      let begin_rev_content = index(['D'], diff_status) > -1 ?
+    if rev_at != s:REV_UNDEFINED
+      let diff_status = s:get_diff_status([rev_at, rev_aside], relative_path)
+      let rev_at_content = index(['D'], diff_status) > -1 ?
             \ s:get_diff_status_content(diff_status) :
-            \ s:get_content(begin_rev, prefix . relative_path)
+            \ s:get_content(rev_at, prefix . relative_path)
     else
       let diff_status = s:get_diff_status('', relative_path)
     endif
+
     if index(['D'], diff_status) > -1
-      let begin_rev_content = s:get_diff_status_content(diff_status)
+      let rev_at_content = s:get_diff_status_content(diff_status)
     endif
-    let rev_content = index(['A'], diff_status) > -1 ?
+
+    let rev_aside_content = index(['A'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(rev, prefix . relative_path)
+          \ s:get_content(rev_aside, prefix . relative_path)
   end
 
   call s:cd_to_original()
 
-  if exists('begin_rev_content')
+  if exists('rev_at_content')
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(
           \   printf(
@@ -92,17 +94,17 @@ function! gitdiffall#diff(args) "{{{
           \     prefix . relative_path,
           \     use_cached ?
           \       'staged' :
-          \       (begin_rev == s:REV_UNDEFINED ? diff_status : begin_rev)
+          \       (rev_at == s:REV_UNDEFINED ? diff_status : rev_at)
           \   )
           \ ), ' \')
-    call s:fill_buffer(begin_rev_content, save_filetype)
+    call s:fill_buffer(rev_at_content, save_filetype)
   endif
 
   execute 'vertical new'
 
-  if exists('begin_rev_content') && begin_rev_content.no_file
+  if exists('rev_at_content') && rev_at_content.no_file
     execute 'wincmd p | vertical resize ' . s:STATUS_ONLY_WIDTH . ' | wincmd p'
-  elseif rev_content.no_file
+  elseif rev_aside_content.no_file
     execute 'vertical resize ' . s:STATUS_ONLY_WIDTH
   endif
 
@@ -110,15 +112,15 @@ function! gitdiffall#diff(args) "{{{
         \   printf(
         \     '%s (%s)',
         \     prefix . '[git diff] ' . relative_path,
-        \     rev
+        \     rev_aside
         \   )
         \ ), ' \')
-  call s:fill_buffer(rev_content, save_filetype)
+  call s:fill_buffer(rev_aside_content, save_filetype)
 
-  if rev_content.success && !rev_content.no_file && (
-        \ exists('begin_rev_content') ?
-        \   (!begin_rev_content.no_file && begin_rev_content.success) :
-        \   (begin_rev == s:REV_UNDEFINED)
+  if rev_aside_content.success && !rev_aside_content.no_file && (
+        \ exists('rev_at_content') ?
+        \   (!rev_at_content.no_file && rev_at_content.success) :
+        \   (rev_at == s:REV_UNDEFINED)
         \ )
     windo diffthis
   endif
@@ -129,8 +131,8 @@ function! gitdiffall#diff(args) "{{{
         \   'diff_opts': diff_opts,
         \   'use_cached': use_cached,
         \   'paths': paths,
-        \   'begin_rev': begin_rev,
-        \   'rev': rev,
+        \   'rev_at': rev_at,
+        \   'rev_aside': rev_aside,
         \   'file': save_file,
         \ }
 endfunction "}}}
@@ -144,14 +146,14 @@ function! gitdiffall#info(args) "{{{
 
   let key = empty(a:args) ? 'logs' : a:args[0]
   let info = t:gitdiffall_info
-  let [begin_rev, rev] = [info.begin_rev, info.rev]
+  let [rev_at, rev_aside] = [info.rev_at, info.rev_aside]
   let format = exists('g:gitdiffall_log_format') ? printf("--format='%s'", g:gitdiffall_log_format) : ''
 
   if !has_key(info, key)
     if key == 'log'
       let info[key] = system(printf(
             \   'git log -1 %s %s %s -- %s',
-            \   begin_rev == s:REV_UNDEFINED ? rev : begin_rev,
+            \   rev_at == s:REV_UNDEFINED ? rev_aside : rev_at,
             \   info.diff_opts,
             \   format,
             \   info.paths
@@ -159,7 +161,7 @@ function! gitdiffall#info(args) "{{{
     elseif key == 'logs'
       let info[key] = system(printf(
             \   'git log %s %s %s -- %s',
-            \   begin_rev == s:REV_UNDEFINED ? (rev . '..') : (rev . '..' . begin_rev),
+            \   rev_at == s:REV_UNDEFINED ? (rev_aside . '..') : (rev_aside . '..' . rev_at),
             \   info.diff_opts,
             \   format,
             \   info.paths
@@ -170,13 +172,13 @@ function! gitdiffall#info(args) "{{{
   if !has_key(info, key)
     echo 'Unsupported option "' . key . '", aborted.'
   else
-    let begin_rev_display = info.use_cached ? '(staged)' :
-          \ begin_rev == s:REV_UNDEFINED ? '(wip)' : begin_rev
+    let rev_at_display = info.use_cached ? '(staged)' :
+          \ rev_at == s:REV_UNDEFINED ? '(wip)' : rev_at
     echo join([
           \   'GitDiff: ',
           \   info.args,
           \   "        ",
-          \   begin_rev_display . " " . rev,
+          \   rev_at_display . " " . rev_aside,
           \   "\n\n",
           \   info[key],
           \ ], '')
@@ -274,8 +276,8 @@ endfunction "}}}
 
 " Git Operations: {{{
 
-function! s:merge_base_of(begin_rev, rev) "{{{
-  let rev = system('git merge-base ' . a:begin_rev . ' ' . a:rev)[0:6])
+function! s:merge_base_of(rev_at, rev_aside) "{{{
+  let rev = system('git merge-base ' . a:rev_at . ' ' . a:rev_aside)[0:6])
   call s:throw_shell_error()
   return rev[0:6]
 endfunction "}}}
@@ -383,8 +385,8 @@ endfunction "}}}
 function! s:parse_revision(revision, use_cached, ...) "{{{
   let diff_opts = a:0 ? a:1 : ''
   let paths = a:0 > 1 ? a:2 : ''
-  let begin_rev = s:REV_UNDEFINED
-  let rev = a:revision
+  let rev_at = s:REV_UNDEFINED
+  let rev_aside = a:revision
 
   let MIN_HASH_ABBR = 5
   call insert(s:complete_cache().recent, a:revision)
@@ -392,34 +394,34 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
   if a:use_cached
     " don't alter revisions here.
   elseif stridx(a:revision, '...') != -1
-    let [begin_rev, rev] = split(a:revision, '\V...', 1)
-    let begin_rev = s:merge_base_of(begin_rev, rev)
+    let [rev_at, rev_aside] = split(a:revision, '\V...', 1)
+    let rev_at = s:merge_base_of(rev_at, rev_aside)
   elseif stridx(a:revision, '..') != -1
-    let [begin_rev, rev] = split(a:revision, '\V..', 1)
+    let [rev_at, rev_aside] = split(a:revision, '\V..', 1)
   elseif a:revision =~ '\v^\@\w+$'
-    let rev = s:shortcut_for_commit(strpart(a:revision, 1), diff_opts, paths)
-    echo printf("Shortcut for this commit is %s.", rev)
+    let rev_aside = s:shortcut_for_commit(strpart(a:revision, 1), diff_opts, paths)
+    echo printf("Shortcut for this commit is %s.", rev_aside)
   elseif a:revision =~ '\v\+\d+$'
-    let rev = strpart(a:revision, 1)
+    let rev_aside = strpart(a:revision, 1)
     let paths .= ' ' . expand('%')
   endif
 
-  if string(str2nr(rev)) == rev && len(rev) < MIN_HASH_ABBR
-    let begin_rev = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
-          \   rev - 1,
+  if string(str2nr(rev_aside)) == rev_aside && len(rev_aside) < MIN_HASH_ABBR
+    let rev_at = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
+          \   rev_aside - 1,
           \   "%h",
           \   diff_opts,
           \   paths
           \ ))
-    let rev = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
-          \   rev,
+    let rev_aside = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
+          \   rev_aside,
           \   "%h",
           \   diff_opts,
           \   paths
           \ ))
   endif
 
-  return [begin_rev, rev]
+  return [rev_at, rev_aside]
 endfunction "}}}
 
 
