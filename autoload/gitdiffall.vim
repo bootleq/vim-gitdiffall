@@ -426,7 +426,8 @@ endfunction "}}}
 function! s:fill_buffer(content, filetype) "{{{
   silent put=a:content.text | 0delete _
   if a:content.success
-    execute 'setlocal filetype=' . a:filetype
+    let filetype = a:content.no_file ? 'help' : a:filetype
+    execute 'setlocal filetype=' . filetype
   endif
   setlocal noswapfile buftype=nofile bufhidden=wipe
 endfunction "}}}
@@ -457,7 +458,7 @@ endfunction "}}}
 function! s:get_diff_status_content(status) "{{{
   if has_key(s:STATUS_ONLY_CONTENT, a:status)
     let content = printf(
-          \   "\n- Nothing -\n\n(%s)",
+          \   "\n- Nothing -~\n\n(%s)",
           \   get(s:STATUS_ONLY_CONTENT, a:status, '')
           \ )
   endif
