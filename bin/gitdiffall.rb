@@ -86,7 +86,7 @@ if revision.to_i.to_s == revision and revision.length < config[:min_hash_abbr]
 end
 
 diff_cmd = "git diff --name-only #{revision} #{use_cached} #{extra_diff_args}"
-files = %x{#{diff_cmd}}.chomp.split
+files = %x{#{diff_cmd}}.chomp.split.uniq
 
 unmerged = %x{#{diff_cmd} --diff-filter=U}.chomp.split
 count = unmerged.length
