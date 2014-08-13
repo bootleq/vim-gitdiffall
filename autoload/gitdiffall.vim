@@ -115,10 +115,11 @@ function! gitdiffall#diff(args) "{{{
         \ ), ' \')
   call s:fill_buffer(rev_content, save_filetype)
 
-  if rev_content.success && !rev_content.no_file &&
+  if rev_content.success && !rev_content.no_file && (
         \ exists('begin_rev_content') ?
         \   (!begin_rev_content.no_file && begin_rev_content.success) :
         \   (begin_rev == s:REV_UNDEFINED)
+        \ )
     windo diffthis
   endif
   wincmd p
