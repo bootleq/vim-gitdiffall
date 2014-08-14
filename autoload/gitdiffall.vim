@@ -61,27 +61,27 @@ function! gitdiffall#diff(args) "{{{
   if use_cached
     let diff_status = s:get_diff_status('--cached', relative_path)
     let rev_at_content = index(['D'], diff_status) > -1 ?
-          \ s:get_diff_status_content(diff_status) :
+          \ s:get_diff_status_content(diff_status, path) :
           \ s:get_content(':0', path, 'staged')
     let rev_aside_content = index(['A'], diff_status) > -1 ?
-          \ s:get_diff_status_content(diff_status) :
+          \ s:get_diff_status_content(diff_status, path) :
           \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, path, 'staged')
   else
     if rev_at != s:REV_UNDEFINED
       let diff_status = s:get_diff_status([rev_at, rev_aside], relative_path)
       let rev_at_content = index(['D'], diff_status) > -1 ?
-            \ s:get_diff_status_content(diff_status) :
+            \ s:get_diff_status_content(diff_status, path) :
             \ s:get_content(rev_at, path)
     else
       let diff_status = s:get_diff_status('', relative_path)
     endif
 
     if index(['D'], diff_status) > -1
-      let rev_at_content = s:get_diff_status_content(diff_status)
+      let rev_at_content = s:get_diff_status_content(diff_status, path)
     endif
 
     let rev_aside_content = index(['A'], diff_status) > -1 ?
-          \ s:get_diff_status_content(diff_status) :
+          \ s:get_diff_status_content(diff_status, path) :
           \ s:get_content(
           \   rev_aside,
           \   path,
@@ -439,7 +439,7 @@ function! s:restore_diff_options() "{{{
 endfunction "}}}
 
 
-function! s:get_diff_status_content(status) "{{{
+function! s:get_diff_status_content(status, path) "{{{
   if has_key(s:STATUS_ONLY_CONTENT, a:status)
     let content = printf(
           \   "\n- Nothing -~\n\n(%s)",
@@ -449,7 +449,7 @@ function! s:get_diff_status_content(status) "{{{
   return {
         \   'text': content,
         \   'success': !empty(content),
-        \   'name': a:status,
+        \   'name': printf('%s (%s)', a:path, a:status),
         \   'no_file': 1
         \ }
 endfunction "}}}
