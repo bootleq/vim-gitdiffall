@@ -81,7 +81,11 @@ function! gitdiffall#diff(args) "{{{
 
     let rev_aside_content = index(['A'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(rev_aside, prefix . relative_path)
+          \ s:get_content(
+          \   rev_aside,
+          \   prefix . relative_path,
+          \   rev_at == s:REV_UNDEFINED ? 'HEAD' : ''
+          \ )
   end
 
   call s:cd_to_original()
