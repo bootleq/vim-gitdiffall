@@ -76,25 +76,36 @@ function! gitdiffall#diff(args) "{{{
       let diff_status = s:get_diff_status('', relative_path)
     endif
 
-    if index(['D'], diff_status) > -1
-      let rev_at_content = s:get_diff_status_content(diff_status, path)
-    endif
+    if index(['U'], diff_status) > -1
+      " 0: normal (result, merged)
+      " 1: common ancestor (original)
+      " 2: target (current branch)
+      " 3: being merged (other branch)
+      let ours_content = s:get_content(':2', path, ':2 ours')
+      let theirs_content = s:get_content(':3', path, ':3 theirs')
+    else
+      if index(['D'], diff_status) > -1
+        let rev_at_content = s:get_diff_status_content(diff_status, path)
+      endif
 
-    let rev_aside_content = index(['A'], diff_status) > -1 ?
-          \ s:get_diff_status_content(diff_status, path) :
-          \ s:get_content(
-          \   rev_aside,
-          \   path,
-          \   rev_at == s:REV_UNDEFINED ? 'HEAD' : ''
-          \ )
+      let rev_aside_content = index(['A'], diff_status) > -1 ?
+            \ s:get_diff_status_content(diff_status, path) :
+            \ s:get_content(
+            \   rev_aside,
+            \   path,
+            \   rev_at == s:REV_UNDEFINED ? 'HEAD' : ''
+            \ )
+    endif
   end
 
   call s:cd_to_original()
+
   call s:split_window(
         \   exists('rev_at_content') ?
         \     rev_at_content :
         \     (rev_at == s:REV_UNDEFINED ? s:REV_UNDEFINED : ''),
-        \   rev_aside_content,
+        \   exists('theirs_content') ? theirs_content : rev_aside_content,
+        \   exists('ours_content') ? ours_content : '',
         \   save_filetype
         \ )
 
@@ -455,7 +466,7 @@ function! s:get_diff_status_content(status, path) "{{{
 endfunction "}}}
 
 
-function! s:split_window(at, aside, filetype) "{{{
+function! s:split_window(at, aside, ours, filetype) "{{{
   if type(a:at) == type({})
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(a:at.name), ' \')
@@ -480,7 +491,14 @@ function! s:split_window(at, aside, filetype) "{{{
         \ )
     windo diffthis
   endif
-  wincmd p
+  wincmd t
+
+  if type(a:ours) == type({})
+    execute 'vertical new'
+    silent execute 'file ' . escape(s:uniq_bufname(a:ours.name), ' \')
+    call s:fill_buffer(a:ours, a:filetype)
+    diffthis | wincmd H | wincmd l | normal! ]c
+  endif
 endfunction "}}}
 
 
