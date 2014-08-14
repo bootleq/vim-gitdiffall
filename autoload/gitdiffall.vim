@@ -61,10 +61,10 @@ function! gitdiffall#diff(args) "{{{
     let diff_status = s:get_diff_status('--cached', relative_path)
     let rev_at_content = index(['D'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(':0', prefix . relative_path)
+          \ s:get_content(':0', prefix . relative_path, 'staged')
     let rev_aside_content = index(['A'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, prefix . relative_path)
+          \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, prefix . relative_path, 'staged')
   else
     if rev_at != s:REV_UNDEFINED
       let diff_status = s:get_diff_status([rev_at, rev_aside], relative_path)
@@ -85,46 +85,13 @@ function! gitdiffall#diff(args) "{{{
   end
 
   call s:cd_to_original()
-
-  if exists('rev_at_content')
-    execute 'enew'
-    silent execute 'file ' . escape(s:uniq_bufname(
-          \   printf(
-          \     '%s (%s)',
-          \     prefix . relative_path,
-          \     use_cached ?
-          \       'staged' :
-          \       (rev_at == s:REV_UNDEFINED ? diff_status : rev_at)
-          \   )
-          \ ), ' \')
-    call s:fill_buffer(rev_at_content, save_filetype)
-  endif
-
-  execute 'vertical new'
-
-  if exists('rev_at_content') && rev_at_content.no_file
-    execute 'wincmd p | vertical resize ' . s:STATUS_ONLY_WIDTH . ' | wincmd p'
-  elseif rev_aside_content.no_file
-    execute 'vertical resize ' . s:STATUS_ONLY_WIDTH
-  endif
-
-  silent execute 'file ' . escape(s:uniq_bufname(
-        \   printf(
-        \     '%s (%s)',
-        \     prefix . '[git diff] ' . relative_path,
-        \     rev_aside
-        \   )
-        \ ), ' \')
-  call s:fill_buffer(rev_aside_content, save_filetype)
-
-  if rev_aside_content.success && !rev_aside_content.no_file && (
-        \ exists('rev_at_content') ?
-        \   (!rev_at_content.no_file && rev_at_content.success) :
-        \   (rev_at == s:REV_UNDEFINED)
+  call s:split_window(
+        \   exists('rev_at_content') ?
+        \     rev_at_content :
+        \     (rev_at == s:REV_UNDEFINED ? s:REV_UNDEFINED : ''),
+        \   rev_aside_content,
+        \   save_filetype
         \ )
-    windo diffthis
-  endif
-  wincmd p
 
   let t:gitdiffall_info = {
         \   'args': empty(a:args) ? '' : join(a:args),
@@ -329,7 +296,9 @@ function! s:get_diff_status(revs, path) "{{{
 endfunction "}}}
 
 
-function! s:get_content(rev, file) "{{{
+function! s:get_content(rev, file, ...) "{{{
+  let file_desc = a:0 ? a:1 : ''
+
   " TODO use :<n>:<path> as rev, see gitrevisions(7)
   let result = system(printf(
         \   "git show %s:%s",
@@ -339,9 +308,17 @@ function! s:get_content(rev, file) "{{{
   if v:shell_error
     let result = substitute(result, '[\n]', ' ', 'g')
   endif
+
+  let name = printf(
+        \   '%s (%s)',
+        \   a:file,
+        \   empty(file_desc) ? a:rev : file_desc
+        \ )
+
   return {
         \   'text': result,
         \   'success': !v:shell_error,
+        \   'name': name,
         \   'no_file': 0
         \ }
 endfunction "}}}
@@ -467,8 +444,38 @@ function! s:get_diff_status_content(status) "{{{
   return {
         \   'text': content,
         \   'success': !empty(content),
+        \   'name': a:status,
         \   'no_file': 1
         \ }
+endfunction "}}}
+
+
+function! s:split_window(at, aside, filetype) "{{{
+  if type(a:at) == type({})
+    execute 'enew'
+    silent execute 'file ' . escape(s:uniq_bufname(a:at.name), ' \')
+    call s:fill_buffer(a:at, a:filetype)
+  endif
+
+  execute 'vertical new'
+
+  if type(a:at) == type({}) && a:at.no_file
+    execute 'wincmd p | vertical resize ' . s:STATUS_ONLY_WIDTH . ' | wincmd p'
+  elseif a:aside.no_file
+    execute 'vertical resize ' . s:STATUS_ONLY_WIDTH
+  endif
+
+  silent execute 'file ' . escape(s:uniq_bufname(a:aside.name), ' \')
+  call s:fill_buffer(a:aside, a:filetype)
+
+  if a:aside.success && !a:aside.no_file && (
+        \ type(a:at) == type({}) ?
+        \   (!a:at.no_file && a:at.success) :
+        \   (a:at == s:REV_UNDEFINED)
+        \ )
+    windo diffthis
+  endif
+  wincmd p
 endfunction "}}}
 
 
