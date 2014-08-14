@@ -56,21 +56,22 @@ function! gitdiffall#diff(args) "{{{
   call s:cd_to_current_head()
   let prefix = s:get_prefix()
   let relative_path = expand('%:.')
+  let path = prefix . relative_path
 
   if use_cached
     let diff_status = s:get_diff_status('--cached', relative_path)
     let rev_at_content = index(['D'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(':0', prefix . relative_path, 'staged')
+          \ s:get_content(':0', path, 'staged')
     let rev_aside_content = index(['A'], diff_status) > -1 ?
           \ s:get_diff_status_content(diff_status) :
-          \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, prefix . relative_path, 'staged')
+          \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, path, 'staged')
   else
     if rev_at != s:REV_UNDEFINED
       let diff_status = s:get_diff_status([rev_at, rev_aside], relative_path)
       let rev_at_content = index(['D'], diff_status) > -1 ?
             \ s:get_diff_status_content(diff_status) :
-            \ s:get_content(rev_at, prefix . relative_path)
+            \ s:get_content(rev_at, path)
     else
       let diff_status = s:get_diff_status('', relative_path)
     endif
@@ -83,7 +84,7 @@ function! gitdiffall#diff(args) "{{{
           \ s:get_diff_status_content(diff_status) :
           \ s:get_content(
           \   rev_aside,
-          \   prefix . relative_path,
+          \   path,
           \   rev_at == s:REV_UNDEFINED ? 'HEAD' : ''
           \ )
   end
