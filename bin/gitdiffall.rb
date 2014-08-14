@@ -88,21 +88,6 @@ end
 diff_cmd = "git diff --name-only #{revision} #{use_cached} #{extra_diff_args}"
 files = %x{#{diff_cmd}}.chomp.split.uniq
 
-unmerged = %x{#{diff_cmd} --diff-filter=U}.chomp.split
-count = unmerged.length
-if count > 0
-  plural = count > 1 ? 's' : ''
-  puts "Unmerged file#{plural}:"
-  unmerged.each {|f| puts "  #{f}"}
-  print "skip all #{count} file#{plural}? (Y/n) "
-  STDOUT.flush
-  case STDIN.gets.chomp.downcase
-  when "n"
-  else
-    files = files - unmerged
-  end
-end
-
 to_skip, to_keep = files.partition {|file|
   file.match(config[:ignore_pattern])
 }
