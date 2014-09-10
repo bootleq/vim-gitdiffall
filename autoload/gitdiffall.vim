@@ -162,8 +162,17 @@ function! gitdiffall#info(args) "{{{
         let log_ours   = s:get_log(rev_ours,   info.paths, log_options)
         let log_theirs = s:get_log(rev_theirs, info.paths, log_options)
 
+        let rebase_msg = printf(
+              \   "rebasing %s on '%s'",
+              \   empty(head_name) ?
+              \     "'" . rev_theirs . "'" :
+              \     "branch: '" . head_name . "'",
+              \   rev_ours
+              \ )
+
         let info[key] = printf(
-              \   "%s\n\nOURS: %s\nTHEIRS: %s",
+              \   "%s\n\n%s\n\n<<<<<< %s\n>>>>>> %s",
+              \   rebase_msg,
               \   todo,
               \   rev_ours . log_ours,
               \   rev_theirs . log_theirs
@@ -195,19 +204,10 @@ function! gitdiffall#info(args) "{{{
     echo 'Unsupported option "' . key . '", aborted.'
   else
     if rebasing
-      let rebase_msg = printf(
-            \   "Rebasing %s on '%s'",
-            \   empty(head_name) ?
-            \     "'" . rev_theirs . "'" :
-            \     "branch: '" . head_name . "'",
-            \   rev_ours
-            \ )
       echo join([
             \   'GitDiff: ',
             \   info.args,
             \   "  ",
-            \   rebase_msg,
-            \   "\n\n",
             \   info[key],
             \ ], '')
 
