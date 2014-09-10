@@ -134,21 +134,17 @@ function! gitdiffall#info(args) "{{{
 
   if !has_key(info, key)
     if key == 'log'
-      let info[key] = system(printf(
-            \   'git log -1 %s %s %s -- %s',
+      let info[key] = s:get_log(
             \   rev_at == s:REV_UNDEFINED ? rev_aside : rev_at,
-            \   info.diff_opts,
-            \   format,
-            \   info.paths
-            \ ))
+            \   info.paths,
+            \   {'limit': 1, 'format': format, 'diff_options': info.diff_opts}
+            \ )
     elseif key == 'logs'
-      let info[key] = system(printf(
-            \   'git log %s %s %s -- %s',
+      let info[key] = s:get_log(
             \   rev_at == s:REV_UNDEFINED ? (rev_aside . '..') : (rev_aside . '..' . rev_at),
-            \   info.diff_opts,
-            \   format,
-            \   info.paths
-            \ ))
+            \   info.paths,
+            \   {'format': format, 'diff_options': info.diff_opts}
+            \ )
     endif
   endif
 
@@ -337,6 +333,22 @@ function! s:get_content(rev, file, ...) "{{{
         \   'name': name,
         \   'no_file': 0
         \ }
+endfunction "}}}
+
+
+function! s:get_log(rev, path, ...) "{{{
+  let options = a:0 ? a:1 : {}
+  let limit = get(options, 'limit', '')
+  let diff_options = get(options, string('diff_options'), '')
+  let log_format = get(options, string('format'), '')
+  return system(printf(
+        \   'git log %s %s %s %s -- %s',
+        \   empty(limit) ? '' : '-' . limit,
+        \   a:rev,
+        \   options['diff_options'],
+        \   options['format'],
+        \   a:path
+        \ ))
 endfunction "}}}
 
 " }}} Git Operations
