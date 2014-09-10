@@ -54,6 +54,7 @@ function! gitdiffall#diff(args) "{{{
   endif
 
   call s:cd_to_current_head()
+  let git_dir = s:git_dir()
   let prefix = s:get_prefix()
   let relative_path = expand('%:.')
   let path = prefix . relative_path
@@ -84,7 +85,7 @@ function! gitdiffall#diff(args) "{{{
       let conflict_marks = s:find_git_hunk_heads(getline(1, '$'))
       let ours_content = s:get_content(':2', path, ':2 ours')
       let theirs_content = s:get_content(':3', path, ':3 theirs')
-      if isdirectory('.git/rebase-merge')
+      if isdirectory(git_dir . 'rebase-merge')
         let rebasing = 1
       endif
     else
@@ -335,6 +336,11 @@ function! s:merge_base_of(rev_at, rev_aside) "{{{
   let rev = system('git merge-base ' . a:rev_at . ' ' . a:rev_aside)[0:6])
   call s:throw_shell_error()
   return rev[0:6]
+endfunction "}}}
+
+
+function! s:git_dir() "{{{
+  return substitute(system('git rev-parse --git-dir'), '\n$', '', '') . '/'
 endfunction "}}}
 
 
