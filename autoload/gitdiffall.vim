@@ -175,7 +175,10 @@ function! gitdiffall#info(args) "{{{
               \   rev_theirs . log_theirs
               \ )
 
-      elseif !empty(conflict_type) " merge, cherry-pick, unknown
+      elseif conflict_type == 'merge' || conflict_type == 'cherry-pick'
+        let info[key] = s:get_merge_msg()
+
+      elseif !empty(conflict_type)
         if len(info.conflicts) == 2
           let info[key] = join(info.conflicts, "\n")
         endif
@@ -205,15 +208,26 @@ function! gitdiffall#info(args) "{{{
             \   'GitDiff: ',
             \   info.args,
             \   "  ",
+            \   "(CONFLICT) ",
             \   info[key],
             \ ], '')
+
+    elseif conflict_type == 'cherry-pick'
+      echo join([
+            \   'GitDiff: ',
+            \   info.args,
+            \   "  ",
+            \   "(CONFLICT) cherry-picking",
+            \   "\n\n",
+            \   info[key]
+            \ ])
 
     elseif !empty(conflict_type)
       echo join([
             \   'GitDiff: ',
             \   info.args,
             \   "  ",
-            \   '(Conflict)',
+            \   '(CONFLICT)',
             \   "\n\n",
             \   info[key],
             \   "\n"
@@ -442,6 +456,16 @@ function! s:get_log(rev, path, ...) "{{{
         \   options['format'],
         \   a:path
         \ ))
+endfunction "}}}
+
+
+function! s:get_merge_msg() "{{{
+  let git_dir = s:git_dir()
+  let msg = ''
+  if filereadable(git_dir . 'MERGE_MSG')
+    let msg = system('cat .git/MERGE_MSG')
+  endif
+  return msg
 endfunction "}}}
 
 
