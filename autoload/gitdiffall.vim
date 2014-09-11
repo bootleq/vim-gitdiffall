@@ -54,10 +54,10 @@ function! gitdiffall#diff(args) "{{{
   endif
 
   call s:cd_to_current_head()
-  let git_dir = s:git_dir()
   let prefix = s:get_prefix()
   let relative_path = expand('%:.')
   let path = prefix . relative_path
+  let conflict_type = ''
 
   if use_cached
     let diff_status = s:get_diff_status('--cached', relative_path)
@@ -85,9 +85,8 @@ function! gitdiffall#diff(args) "{{{
       let conflict_marks = s:find_git_hunk_heads(getline(1, '$'))
       let ours_content = s:get_content(':2', path, ':2 ours')
       let theirs_content = s:get_content(':3', path, ':3 theirs')
-      if isdirectory(git_dir . 'rebase-merge')
-        let rebasing = 1
-      endif
+
+      let conflict_type = s:conflict_type()
     else
       if index(['D'], diff_status) > -1
         let rev_at_content = s:get_diff_status_content(diff_status, path)
@@ -121,9 +120,8 @@ function! gitdiffall#diff(args) "{{{
         \   'paths': paths,
         \   'rev_at': rev_at,
         \   'rev_aside': rev_aside,
-        \   'unmerged': exists('ours_content'),
+        \   'conflict_type': conflict_type,
         \   'conflicts': exists('conflict_marks') ? conflict_marks : [],
-        \   'rebasing': exists('rebasing'),
         \   'file': save_file,
         \ }
 endfunction "}}}
@@ -138,14 +136,13 @@ function! gitdiffall#info(args) "{{{
   let key = empty(a:args) ? 'logs' : a:args[0]
   let info = t:gitdiffall_info
   let [rev_at, rev_aside] = [info.rev_at, info.rev_aside]
-  let unmerged = info.unmerged
-  let rebasing = info.rebasing
+  let conflict_type = info.conflict_type
   let format = exists('g:gitdiffall_log_format') ? printf("--format='%s'", g:gitdiffall_log_format) : ''
 
   if !has_key(info, key)
     if key == 'log'
 
-      if rebasing
+      if conflict_type == 'rebase'
         let head_name = matchstr(
               \   system('cat .git/rebase-merge/head-name'),
               \   '\v^refs/heads/\zs\w+'
@@ -178,7 +175,7 @@ function! gitdiffall#info(args) "{{{
               \   rev_theirs . log_theirs
               \ )
 
-      elseif unmerged
+      elseif !empty(conflict_type) " merge, cherry-pick, unknown
         if len(info.conflicts) == 2
           let info[key] = join(info.conflicts, "\n")
         endif
@@ -203,7 +200,7 @@ function! gitdiffall#info(args) "{{{
   if !has_key(info, key)
     echo 'Unsupported option "' . key . '", aborted.'
   else
-    if rebasing
+    if conflict_type == 'rebase'
       echo join([
             \   'GitDiff: ',
             \   info.args,
@@ -211,7 +208,7 @@ function! gitdiffall#info(args) "{{{
             \   info[key],
             \ ], '')
 
-    elseif unmerged
+    elseif !empty(conflict_type)
       echo join([
             \   'GitDiff: ',
             \   info.args,
@@ -346,6 +343,20 @@ endfunction "}}}
 
 function! s:get_prefix() "{{{
   return substitute(system("git rev-parse --show-prefix"), '\n$', '', '')
+endfunction "}}}
+
+
+function! s:conflict_type() "{{{
+  let git_dir = s:git_dir()
+  if isdirectory(git_dir . 'rebase-merge')
+    return 'rebase'
+  elseif filereadable(git_dir . 'CHERRY_PICK_HEAD')
+    return 'cherry-pick'
+  elseif filereadable(git_dir . 'MERGE_HEAD')
+    return 'merge'
+  endif
+
+  return 'unknown'
 endfunction "}}}
 
 
