@@ -82,11 +82,13 @@ function! gitdiffall#diff(args) "{{{
       " 1: common ancestor (original)
       " 2: target (current branch)
       " 3: being merged (other branch)
-      let conflict_marks = s:find_git_hunk_heads(getline(1, '$'))
       let ours_content = s:get_content(':2', path, ':2 ours')
       let theirs_content = s:get_content(':3', path, ':3 theirs')
 
       let conflict_type = s:conflict_type()
+      if conflict_type == 'unknown'
+        let conflict_marks = s:find_git_hunk_heads(getline(1, '$'))
+      endif
     else
       if index(['D'], diff_status) > -1
         let rev_at_content = s:get_diff_status_content(diff_status, path)
@@ -121,7 +123,7 @@ function! gitdiffall#diff(args) "{{{
         \   'rev_at': rev_at,
         \   'rev_aside': rev_aside,
         \   'conflict_type': conflict_type,
-        \   'conflicts': exists('conflict_marks') ? conflict_marks : [],
+        \   'conflict_marks': exists('conflict_marks') ? conflict_marks : [],
         \   'file': save_file,
         \ }
 endfunction "}}}
@@ -134,8 +136,8 @@ function! gitdiffall#info(args) "{{{
   endif
 
   let key = empty(a:args) ? 'logs' : a:args[0]
+  let title_key = key . '_title'
   let info = t:gitdiffall_info
-  let [rev_at, rev_aside] = [info.rev_at, info.rev_aside]
   let conflict_type = info.conflict_type
   let format = exists('g:gitdiffall_log_format') ? printf("--format='%s'", g:gitdiffall_log_format) : ''
 
@@ -156,36 +158,39 @@ function! gitdiffall#info(args) "{{{
               \ '--format=''%w(0,2,2)%B'''
         let todo = s:get_rebase_todo(rev_theirs)
         let log_options = {'limit': 1, 'format': rebase_format, 'diff_options': info.diff_opts}
-        let log_ours   = s:get_log(rev_ours,   info.paths, log_options)
-        let log_theirs = s:get_log(rev_theirs, info.paths, log_options)
 
-        let rebase_msg = printf(
-              \   "rebasing %s on '%s'",
+        let info[title_key] = printf("(CONFLICT) rebasing %s on '%s'",
               \   empty(head_name) ?
               \     "'" . rev_theirs . "'" :
-              \     "branch: '" . head_name . "'",
+              \     "branch '" . head_name . "'",
               \   rev_ours
               \ )
 
-        let info[key] = printf(
-              \   "%s\n\n%s\n\n<<<<<< %s\n>>>>>> %s",
-              \   rebase_msg,
-              \   todo,
-              \   rev_ours . log_ours,
-              \   rev_theirs . log_theirs
+        let info[key] = todo . "\n\n" . printf(
+              \   "<<<<<< %s\n>>>>>> %s",
+              \   rev_ours   . s:get_log(rev_ours,   info.paths, log_options),
+              \   rev_theirs . s:get_log(rev_theirs, info.paths, log_options)
               \ )
 
-      elseif conflict_type == 'merge' || conflict_type == 'cherry-pick'
+      elseif conflict_type == 'merge'
+        let info[title_key] = '(CONFLICT)'
+        let info[key] = s:get_merge_msg()
+
+      elseif conflict_type == 'cherry-pick'
+        let info[title_key] = printf("(CONFLICT) cherry-picking commit '%s'",
+              \   system('cat .git/CHERRY_PICK_HEAD')[:6]
+              \ )
         let info[key] = s:get_merge_msg()
 
       elseif !empty(conflict_type)
-        if len(info.conflicts) == 2
-          let info[key] = join(info.conflicts, "\n")
+        let info[title_key] = '(CONFLICT)'
+        if len(info.conflict_marks) == 2
+          let info[key] = join(info.conflict_marks, "\n")
         endif
 
       else
         let info[key] = s:get_log(
-              \   rev_at == s:REV_UNDEFINED ? rev_aside : rev_at,
+              \   info.rev_at == s:REV_UNDEFINED ? info.rev_aside : info.rev_at,
               \   info.paths,
               \   {'limit': 1, 'format': format, 'diff_options': info.diff_opts}
               \ )
@@ -193,9 +198,19 @@ function! gitdiffall#info(args) "{{{
 
     elseif key == 'logs'
       let info[key] = s:get_log(
-            \   rev_at == s:REV_UNDEFINED ? (rev_aside . '..') : (rev_aside . '..' . rev_at),
+            \   info.rev_at == s:REV_UNDEFINED ? (info.rev_aside . '..') : (info.rev_aside . '..' . info.rev_at),
             \   info.paths,
             \   {'format': format, 'diff_options': info.diff_opts}
+            \ )
+    endif
+
+    if empty(get(info, title_key))
+      let info[title_key] = printf('%s%s %s',
+            \   repeat(" ", 8),
+            \   info.use_cached ?
+            \     '(staged)' :
+            \     info.rev_at == s:REV_UNDEFINED ? '(wip)' : info.rev_at,
+            \   info.rev_aside
             \ )
     endif
   endif
@@ -203,52 +218,14 @@ function! gitdiffall#info(args) "{{{
   if !has_key(info, key)
     echo 'Unsupported option "' . key . '", aborted.'
   else
-    if conflict_type == 'rebase'
-      echo join([
-            \   'GitDiff: ',
-            \   info.args,
-            \   "  ",
-            \   "(CONFLICT) ",
-            \   info[key],
-            \ ], '')
-
-    elseif conflict_type == 'cherry-pick'
-      echo join([
-            \   'GitDiff: ',
-            \   info.args,
-            \   "  ",
-            \   "(CONFLICT) cherry-picking",
-            \   "\n\n",
-            \   info[key]
-            \ ])
-
-    elseif !empty(conflict_type)
-      echo join([
-            \   'GitDiff: ',
-            \   info.args,
-            \   "  ",
-            \   '(CONFLICT)',
-            \   "\n\n",
-            \   info[key],
-            \   "\n"
-            \ ], '')
-
-    else
-      if info.use_cached
-        let rev_at_display = '(staged)'
-      else
-        let rev_at_display = rev_at == s:REV_UNDEFINED ? '(wip)' : rev_at
-      endif
-
-      echo join([
-            \   'GitDiff: ',
-            \   info.args,
-            \   "        ",
-            \   rev_at_display . " " . rev_aside,
-            \   "\n\n",
-            \   info[key],
-            \ ], '')
-    endif
+    echo join([
+          \   'GitDiff: ',
+          \   info.args,
+          \   "  ",
+          \   info[title_key],
+          \   "\n\n",
+          \   info[key],
+          \ ], '')
   endif
 endfunction "}}}
 
