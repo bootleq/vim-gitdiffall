@@ -147,14 +147,15 @@ function! gitdiffall#info(args) "{{{
 
       if conflict_type == 'rebase'
         let head_name = matchstr(readfile(git_dir . 'rebase-merge/head-name', '', 1)[0], '\v^refs/heads/\zs.+')
-        let [rev_ours, rev_theirs] = [
+        let [rev_ours, rev_theirs, rev_stopped] = [
               \   system('cat ' . git_dir . 'rebase-merge/onto')[:6],
-              \   system('cat ' . git_dir . 'rebase-merge/orig-head')[:6]
+              \   system('cat ' . git_dir . 'rebase-merge/orig-head')[:6],
+              \   system('cat ' . git_dir . 'rebase-merge/stopped-sha')[:6]
               \ ]
         let rebase_format = exists('g:gitdiffall_rebase_log_format') ?
               \ printf("--format='%s'", g:gitdiffall_rebase_log_format) :
               \ '--format=''%w(0,2,2)%B'''
-        let todo = s:get_rebase_todo(rev_theirs, git_dir)
+        let todo = s:get_rebase_todo(rev_stopped, git_dir)
         let log_options = {'limit': 1, 'format': rebase_format, 'diff_options': info.diff_opts}
 
         let info[title_key] = printf("(CONFLICT) rebasing %s on '%s'",
@@ -166,8 +167,8 @@ function! gitdiffall#info(args) "{{{
 
         let info[key] = todo . "\n\n" . printf(
               \   "<<<<<< %s\n>>>>>> %s",
-              \   rev_ours   . s:get_log(rev_ours,   info.paths, log_options),
-              \   rev_theirs . s:get_log(rev_theirs, info.paths, log_options)
+              \   rev_ours    . s:get_log(rev_ours,    info.paths, log_options),
+              \   rev_stopped . s:get_log(rev_stopped, info.paths, log_options)
               \ )
 
       elseif conflict_type == 'merge'
