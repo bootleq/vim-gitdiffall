@@ -135,6 +135,7 @@ function! gitdiffall#info(args) "{{{
     return
   endif
 
+  let git_dir = s:git_dir()
   let key = empty(a:args) ? 'logs' : a:args[0]
   let title_key = key . '_title'
   let info = t:gitdiffall_info
@@ -145,18 +146,15 @@ function! gitdiffall#info(args) "{{{
     if key == 'log'
 
       if conflict_type == 'rebase'
-        let head_name = matchstr(
-              \   system('cat .git/rebase-merge/head-name'),
-              \   '\v^refs/heads/\zs\w+'
-              \ )
+        let head_name = matchstr(readfile(git_dir . 'rebase-merge/head-name', '', 1)[0], '\v^refs/heads/\zs.+')
         let [rev_ours, rev_theirs] = [
-              \   system('cat .git/rebase-merge/onto')[:6],
-              \   system('cat .git/rebase-merge/orig-head')[:6]
+              \   system('cat ' . git_dir . 'rebase-merge/onto')[:6],
+              \   system('cat ' . git_dir . 'rebase-merge/orig-head')[:6]
               \ ]
         let rebase_format = exists('g:gitdiffall_rebase_log_format') ?
               \ printf("--format='%s'", g:gitdiffall_rebase_log_format) :
               \ '--format=''%w(0,2,2)%B'''
-        let todo = s:get_rebase_todo(rev_theirs)
+        let todo = s:get_rebase_todo(rev_theirs, git_dir)
         let log_options = {'limit': 1, 'format': rebase_format, 'diff_options': info.diff_opts}
 
         let info[title_key] = printf("(CONFLICT) rebasing %s on '%s'",
@@ -174,13 +172,13 @@ function! gitdiffall#info(args) "{{{
 
       elseif conflict_type == 'merge'
         let info[title_key] = '(CONFLICT)'
-        let info[key] = s:get_merge_msg()
+        let info[key] = s:get_merge_msg(git_dir)
 
       elseif conflict_type == 'cherry-pick'
         let info[title_key] = printf("(CONFLICT) cherry-picking commit '%s'",
-              \   system('cat .git/CHERRY_PICK_HEAD')[:6]
+              \   system('cat ' . git_dir . 'CHERRY_PICK_HEAD')[:6]
               \ )
-        let info[key] = s:get_merge_msg()
+        let info[key] = s:get_merge_msg(git_dir)
 
       elseif !empty(conflict_type)
         let info[title_key] = '(CONFLICT)'
@@ -436,27 +434,31 @@ function! s:get_log(rev, path, ...) "{{{
 endfunction "}}}
 
 
-function! s:get_merge_msg() "{{{
-  let git_dir = s:git_dir()
+function! s:get_merge_msg(...) "{{{
+  let git_dir = a:0 ? a:1 : s:git_dir()
   let msg = ''
   if filereadable(git_dir . 'MERGE_MSG')
-    let msg = system('cat .git/MERGE_MSG')
+    let msg = system('cat ' . git_dir . 'MERGE_MSG')
   endif
   return msg
 endfunction "}}}
 
 
-function! s:get_rebase_todo(current_rev) "{{{
-  let todo = system('cat .git/rebase-merge/git-rebase-todo.backup')
-  let todo = substitute(todo, '\v\zs(\n\n|^#).+', '\n', '')
-  let todo = join(
-        \   map(
-        \     split(todo, '\n'),
-        \     '(v:val =~? "\\v^\\w+ ' . a:current_rev . '" ? "* " : "  ") . v:val'
-        \   ),
-        \   "\n"
-        \ )
-  return todo
+function! s:get_rebase_todo(current_rev, ...) "{{{
+  let git_dir = a:0 ? a:1 : s:git_dir()
+  if filereadable(git_dir . 'rebase-merge/git-rebase-todo.backup')
+    let todo = system('cat ' . git_dir . 'rebase-merge/git-rebase-todo.backup')
+    let todo = substitute(todo, '\v\zs(\n\n|^#).+', '\n', '')
+    let todo = join(
+          \   map(
+          \     split(todo, '\n'),
+          \     '(v:val =~? "\\v^\\w+ ' . a:current_rev . '" ? "* " : "  ") . v:val'
+          \   ),
+          \   "\n"
+          \ )
+    return todo
+  endif
+  return ''
 endfunction "}}}
 
 " }}} Git Operations
