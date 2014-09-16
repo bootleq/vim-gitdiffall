@@ -5,6 +5,7 @@ View git diff in Vim tabs.
 
 - `gitdiffall` command for zsh (**requires ruby** for running _gitdiffall.rb_).
 - `GitDiff`, `GitDiffInfo`, `GitDiffOff` commands for Vim.
+- 3-way diff during merge conflicts.
 
 
 Install

@@ -31,6 +31,9 @@ COMMANDS                                                 *gitdiffall-commands*
   <revision> and <arguments> are used similar to git-diff.
   See |gitdiffall-revisions| for some special ways to specify revisions.
 
+  During a merge conflict and no <revision> presented, splits windows for both
+  conflict sides, thus can be used as a mergetool.
+
   If there are existed GitDiff buffers in current tab, no diff will be
   performed, this command calls `:GitDiffInfo "log"` instead.
 
@@ -62,6 +65,12 @@ g:gitdiffall_log_format            (default: none) ~
   If not set, let git to determine it, usually the default "medium" will be
   used.
 
+g:gitdiffall_rebase_log_format            (default: --format='%w(0,2,2)%B') ~
+
+  Used by :GitDiffInfo command. When doing rebase, and stopped at conflicts,
+  :GitDiffInfo will print log message for each conflict commits, with
+  formatting from this option.
+
 ==============================================================================
 REVISIONS                                               *gitdiffall-revisions*
 
@@ -71,7 +80,8 @@ Examples:
 
   revision    example   description ~
   ---------   -------   -----------  ~
-  (empty)               Nothing (will compare current unstaged/staged changes)
+  (empty)               Compare current index and staging changes, or
+                        ours/theirs changes during merge conflicts
   <sha1>      dae86e    To commit object dae86e
   <refname>   HEAD      To HEAD
   <rev>^      HEAD^     To first parent of HEAD
