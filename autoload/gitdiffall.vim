@@ -24,7 +24,9 @@ let s:STATUS_ONLY_CONTENT = {
       \   'D':  'file deleted',
       \   'DD': 'both deleted',
       \   'AU': 'added by US',
-      \   'UA': 'added by THEM'
+      \   'UA': 'added by THEM',
+      \   'DU': 'deleted by US',
+      \   'UD': 'deleted by THEM'
       \ }
 
 " }}} Constants
@@ -85,6 +87,12 @@ function! gitdiffall#diff(args) "{{{
 
       if index(['DD', 'AU', 'UA'], unmerged_status) > -1
         let rev_aside_content = s:get_diff_status_content(unmerged_status, path)
+      elseif unmerged_status == 'DU'
+        let ours_content = s:get_content(':1', path, ':1 base')
+        let theirs_content = s:get_diff_status_content(unmerged_status, path)
+      elseif unmerged_status == 'UD'
+        let ours_content = s:get_diff_status_content(unmerged_status, path)
+        let theirs_content = s:get_content(':1', path, ':1 base')
       else
         " 0: normal (result, merged)
         " 1: common ancestor (original)
@@ -563,7 +571,7 @@ endfunction "}}}
 function! s:fill_buffer(content, filetype) "{{{
   silent put=a:content.text | 0delete _
   if a:content.success
-    let filetype = a:content.no_file ? 'help' : a:filetype
+    let filetype = a:content.no_file ? 'gitdiffall_nofile' : a:filetype
     execute 'setlocal filetype=' . filetype
   endif
   setlocal noswapfile buftype=nofile bufhidden=wipe
@@ -614,24 +622,14 @@ function! s:split_window(at, aside, ours, filetype) "{{{
     silent execute 'file ' . escape(s:uniq_bufname(a:at.name), ' \')
     call s:fill_buffer(a:at, a:filetype)
   endif
+  diffthis
 
   execute 'vertical new'
 
-  if type(a:at) == type({}) && a:at.no_file
-    execute 'wincmd p | vertical resize ' . s:STATUS_ONLY_WIDTH . ' | wincmd p'
-  elseif a:aside.no_file
-    execute 'vertical resize ' . s:STATUS_ONLY_WIDTH
-  endif
-
   silent execute 'file ' . escape(s:uniq_bufname(a:aside.name), ' \')
   call s:fill_buffer(a:aside, a:filetype)
-
-  if a:aside.success && !a:aside.no_file && (
-        \ type(a:at) == type({}) ?
-        \   (!a:at.no_file && a:at.success) :
-        \   (a:at == s:REV_UNDEFINED)
-        \ )
-    windo diffthis
+  if a:aside.success && !a:aside.no_file
+    diffthis
   endif
   wincmd t
 
@@ -639,8 +637,18 @@ function! s:split_window(at, aside, ours, filetype) "{{{
     execute 'vertical new'
     silent execute 'file ' . escape(s:uniq_bufname(a:ours.name), ' \')
     call s:fill_buffer(a:ours, a:filetype)
-    diffthis | wincmd H | wincmd l | normal! ]c
+    if !a:ours.no_file
+      diffthis
+    endif
+    wincmd H
   endif
+
+  for winnr in filter(range(1, tabpagewinnr(tabpagenr(), '$')),
+        \ 'getbufvar(winbufnr(v:val), "&filetype") ==# "gitdiffall_nofile"')
+    silent execute winnr 'wincmd w'
+    silent execute 'setlocal nonumber syntax=help | vertical resize ' . s:STATUS_ONLY_WIDTH
+  endfor
+  wincmd b | wincmd h | normal! ]c
 endfunction "}}}
 
 
