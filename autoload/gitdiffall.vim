@@ -67,16 +67,16 @@ function! gitdiffall#diff(args) "{{{
   if use_cached
     let diff_status = s:get_diff_status('--cached', relative_path)
     let rev_at_content = index(['D'], diff_status) > -1 ?
-          \ s:get_diff_status_content(diff_status, path) :
+          \ s:get_content_for_status(diff_status, path) :
           \ s:get_content(':0', path, 'staged')
     let rev_aside_content = index(['A'], diff_status) > -1 ?
-          \ s:get_diff_status_content(diff_status, path) :
+          \ s:get_content_for_status(diff_status, path) :
           \ s:get_content(empty(rev_aside) ? 'HEAD' : rev_aside, path, 'HEAD')
   else
     if rev_at != s:REV_UNDEFINED
       let diff_status = s:get_diff_status([rev_at, rev_aside], relative_path)
       let rev_at_content = index(['D'], diff_status) > -1 ?
-            \ s:get_diff_status_content(diff_status, path) :
+            \ s:get_content_for_status(diff_status, path) :
             \ s:get_content(rev_at, path)
     else
       let diff_status = s:get_diff_status('', relative_path)
@@ -86,12 +86,12 @@ function! gitdiffall#diff(args) "{{{
       let unmerged_status = s:get_unmerged_status(relative_path)
 
       if index(['DD', 'AU', 'UA'], unmerged_status) > -1
-        let rev_aside_content = s:get_diff_status_content(unmerged_status, path)
+        let rev_aside_content = s:get_content_for_status(unmerged_status, path)
       elseif unmerged_status == 'DU'
         let ours_content = s:get_content(':1', path, ':1 base')
-        let theirs_content = s:get_diff_status_content(unmerged_status, path)
+        let theirs_content = s:get_content_for_status(unmerged_status, path)
       elseif unmerged_status == 'UD'
-        let ours_content = s:get_diff_status_content(unmerged_status, path)
+        let ours_content = s:get_content_for_status(unmerged_status, path)
         let theirs_content = s:get_content(':1', path, ':1 base')
       else
         " 0: normal (result, merged)
@@ -109,11 +109,11 @@ function! gitdiffall#diff(args) "{{{
 
     else
       if index(['D'], diff_status) > -1
-        let rev_at_content = s:get_diff_status_content(diff_status, path)
+        let rev_at_content = s:get_content_for_status(diff_status, path)
       endif
 
       let rev_aside_content = index(['A'], diff_status) > -1 ?
-            \ s:get_diff_status_content(diff_status, path) :
+            \ s:get_content_for_status(diff_status, path) :
             \ s:get_content(
             \   rev_aside,
             \   path,
@@ -600,7 +600,7 @@ function! s:restore_diff_options() "{{{
 endfunction "}}}
 
 
-function! s:get_diff_status_content(status, path) "{{{
+function! s:get_content_for_status(status, path) "{{{
   if has_key(s:STATUS_ONLY_CONTENT, a:status)
     let content = printf(
           \   "\n- Nothing -~\n\n(%s)",
