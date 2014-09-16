@@ -20,8 +20,11 @@ let s:OPTIONS = [
       \ ]
 let s:STATUS_ONLY_WIDTH = 16
 let s:STATUS_ONLY_CONTENT = {
-      \   'A': 'file added',
-      \   'D': 'file deleted'
+      \   'A':  'file added',
+      \   'D':  'file deleted',
+      \   'DD': 'both deleted',
+      \   'AU': 'added by US',
+      \   'UA': 'added by THEM'
       \ }
 
 " }}} Constants
@@ -78,17 +81,24 @@ function! gitdiffall#diff(args) "{{{
     endif
 
     if index(['U'], diff_status) > -1
-      " 0: normal (result, merged)
-      " 1: common ancestor (original)
-      " 2: target (current branch)
-      " 3: being merged (other branch)
-      let ours_content = s:get_content(':2', path, ':2 ours')
-      let theirs_content = s:get_content(':3', path, ':3 theirs')
+      let unmerged_status = s:get_unmerged_status(relative_path)
+
+      if index(['DD', 'AU', 'UA'], unmerged_status) > -1
+        let rev_aside_content = s:get_diff_status_content(unmerged_status, path)
+      else
+        " 0: normal (result, merged)
+        " 1: common ancestor (original)
+        " 2: target (current branch)
+        " 3: being merged (other branch)
+        let ours_content = s:get_content(':2', path, ':2 ours')
+        let theirs_content = s:get_content(':3', path, ':3 theirs')
+      endif
 
       let conflict_type = s:conflict_type()
       if conflict_type == 'unknown'
         let conflict_marks = s:find_git_hunk_heads(getline(1, '$'))
       endif
+
     else
       if index(['D'], diff_status) > -1
         let rev_at_content = s:get_diff_status_content(diff_status, path)
@@ -388,6 +398,15 @@ function! s:get_diff_status(revs, path) "{{{
         \   a:path
         \ ))
   return result[0]
+endfunction "}}}
+
+
+function! s:get_unmerged_status(path) "{{{
+  let result = system(printf(
+        \   "git status --short -- %s",
+        \   a:path
+        \ ))
+  return matchstr(result, '\v^\w+')
 endfunction "}}}
 
 
