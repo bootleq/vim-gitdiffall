@@ -47,6 +47,8 @@ COMMANDS                                                 *gitdiffall-commands*
   "log"     Single log which should be most relevant to specified revision.
   (empty)   Use default, same as "logs".
 
+  The output buffer will be set as filetype 'gitdiffallinfo'.
+
 :GitDiffOff                                           *gitdiffall-:GitDiffOff*
 
   Use this to stop GitDiff and back to original buffer.
