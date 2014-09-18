@@ -226,8 +226,14 @@ function! gitdiffall#info(args) "{{{
             \   repeat(" ", 8),
             \   info.use_cached ?
             \     '(staged)' :
-            \     info.rev_at == s:REV_UNDEFINED ? '(wip)' : info.rev_at,
-            \   info.rev_aside
+            \     info.rev_at == s:REV_UNDEFINED ?
+            \       '(wip)' :
+            \       empty(info.rev_at) ?
+            \         '' :
+            \         "'" . info.rev_at . "'",
+            \   empty(info.rev_aside) ?
+            \     '' :
+            \     "'" . info.rev_aside . "'"
             \ )
     endif
   endif
