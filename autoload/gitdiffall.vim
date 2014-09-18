@@ -88,11 +88,11 @@ function! gitdiffall#diff(args) "{{{
       if index(['DD', 'AU', 'UA'], unmerged_status) > -1
         let rev_aside_content = s:get_content_for_status(unmerged_status, path)
       elseif unmerged_status == 'DU'
-        let ours_content = s:get_content(':1', path, ':1 base')
-        let theirs_content = s:get_content_for_status(unmerged_status, path)
-      elseif unmerged_status == 'UD'
         let ours_content = s:get_content_for_status(unmerged_status, path)
         let theirs_content = s:get_content(':1', path, ':1 base')
+      elseif unmerged_status == 'UD'
+        let ours_content = s:get_content(':1', path, ':1 base')
+        let theirs_content = s:get_content_for_status(unmerged_status, path)
       else
         " 0: normal (result, merged)
         " 1: common ancestor (original)
