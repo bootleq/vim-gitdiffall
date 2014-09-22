@@ -635,8 +635,12 @@ function! s:split_window(at, aside, ours, filetype) "{{{
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(a:at.name), ' \')
     call s:fill_buffer(a:at, a:filetype)
+    if !a:at.no_file
+      diffthis
+    endif
+  else
+    diffthis
   endif
-  diffthis
 
   execute 'vertical new'
 
