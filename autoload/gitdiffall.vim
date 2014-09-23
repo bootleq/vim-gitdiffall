@@ -675,7 +675,7 @@ function! s:open_preview_window(content) "{{{
           \     'setlocal nonumber | wincmd J | ' .
           \     'execute "resize " . (line("$") + 1)',
           \   ' ') .
-          \ ' ' . escape(s:uniq_bufname(a:content.name), ' \')
+          \ ' ' . escape(a:content.name, ' \')
   else
     silent execute
           \ 'new | file ' . escape(s:uniq_bufname(a:content.name), ' \') . ' | '
