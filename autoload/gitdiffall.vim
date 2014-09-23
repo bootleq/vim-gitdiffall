@@ -252,11 +252,8 @@ function! gitdiffall#info(args) "{{{
           \   'name': info.file . ' [GitDiff]',
           \   'no_file': 0
           \ }
-    silent execute
-          \ 'new | file ' . escape(s:uniq_bufname(info_content.name), ' \') . ' | '
-          \ 'setlocal nonumber | wincmd J'
-    call s:fill_buffer(info_content, 'gitdiffallinfo')
-    execute 'setlocal nomodifiable | resize ' . (line('$') + 1)
+
+    call s:open_preview_window(info_content)
   endif
 endfunction "}}}
 
@@ -667,6 +664,25 @@ function! s:split_window(at, aside, ours, filetype) "{{{
     silent execute 'setlocal nonumber syntax=help | vertical resize ' . s:STATUS_ONLY_WIDTH
   endfor
   wincmd b | wincmd h | normal! ]c
+endfunction "}}}
+
+
+function! s:open_preview_window(content) "{{{
+  if has('quickfix')
+    silent execute 'pedit ' .
+          \ escape(
+          \   '+call s:fill_buffer(a:content, "gitdiffallinfo") | ' .
+          \     'setlocal nonumber | wincmd J | ' .
+          \     'execute "resize " . (line("$") + 1)',
+          \   ' ') .
+          \ ' ' . escape(s:uniq_bufname(a:content.name), ' \')
+  else
+    silent execute
+          \ 'new | file ' . escape(s:uniq_bufname(a:content.name), ' \') . ' | '
+          \ 'setlocal nonumber | wincmd J'
+    call s:fill_buffer(a:content, 'gitdiffallinfo')
+    execute 'setlocal nomodifiable | resize ' . (line('$') + 1)
+  endif
 endfunction "}}}
 
 
