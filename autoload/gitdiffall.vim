@@ -567,12 +567,7 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
           \   diff_opts,
           \   paths
           \ ))
-    let rev_aside = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
-          \   rev_aside,
-          \   "%h",
-          \   diff_opts,
-          \   paths
-          \ ))
+    let rev_aside = rev_at . "^"
   endif
 
   return [rev_at, rev_aside]

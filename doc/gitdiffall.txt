@@ -104,12 +104,9 @@ For convenience, there are some special notations:
   revision    example   description ~
   ----------  -------   -----------  ~
   @<rev>      @dae86e   Similar to <rev>, but only compare <rev> with it's
-                        previous commit, i.e. expand to <previous-rev>..<rev>.
+                        first parent, i.e. expand to <rev>^..<rev>.
                         This is for quickly checking changes in a specified
                         commit.
-                        Note that <previous-rev> may be different to <rev>^,
-                        but fetched from previous entry in git-log, to provide
-                        a more linear-like history traversal.
   <n>         1         Will be expanded to @<rev>, where <rev> is the nth
                         previous commit from HEAD. <n> starts from 1.
   +<n>        +4        Like <n>, but only commits include current file are

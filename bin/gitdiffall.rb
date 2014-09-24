@@ -56,7 +56,7 @@ revision = ARGV.join(' ')
 # revision example:
 #   (nil)       - see current (unstaged) changes
 #   <commit>    - see current changes, compare with <commit>
-#   @<commit>   - compare <commit> with it's previous commit (liner shown in git log)
+#   @<commit>   - compare <commit> with it's first parent (<commit>^)
 #   4 (number)  - shortcut for @<commit> where commit is the <number>-th previous one
 
 if %x(git rev-parse --is-inside-work-tree) == 'false'
@@ -81,8 +81,7 @@ end
 
 if revision.to_i.to_s == revision and revision.length < config[:min_hash_abbr]
   rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
-  previous = %x(git log -1 --skip=#{revision} --format=format:"%h" #{extra_diff_args})
-  revision = "#{rev}..#{previous}"
+  revision = "#{rev}..#{rev}^"
 end
 
 diff_cmd = "git diff --name-only #{revision} #{use_cached} #{extra_diff_args}"

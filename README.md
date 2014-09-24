@@ -33,8 +33,7 @@ In zsh, use `gitdiffall` to open git diff in Vim tabs, examples:
 
 For convenience, some special notations are available:
 
-- `gitdiffall @dae86e`  will be expanded to `<previous-rev>..dae86e`,  
-  where `<previous-rev>` is the previous entry of "dae86e" in `git log` (may be different to `dae86e^`).  
+- `gitdiffall @dae86e` expands to `dae86e^..dae86e`,  
   This is a shrotcut for checking changes in a specified commit.
 - `gitdiffall 1`  is similar to `@<rev>`,  
   where `<rev>` is the nth previous commit from HEAD, starts from 1.
