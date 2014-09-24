@@ -7,7 +7,7 @@ set cpoptions&vim
 
 " Commitish {{{
 syntax match  GitDiffInfo_CommitishQuote "'" conceal contained
-syntax region GitDiffInfo_Commitish      start=/\v'\ze%(\w|-)+'/ end=/'/ contained keepend contains=GitDiffInfo_Commitish.*
+syntax region GitDiffInfo_Commitish      start=/\v'\ze%(\w|-)+\^?'/ end=/'/ contained keepend contains=GitDiffInfo_Commitish.*
 " }}}
 
 
