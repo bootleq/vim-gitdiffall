@@ -676,6 +676,11 @@ function! s:open_preview_window(content) "{{{
           \     'execute "resize " . (line("$") + 1)',
           \   ' ') .
           \ ' ' . escape(a:content.name, ' \')
+
+    if !get(g:, 'gitdiffall_keep_info_window')
+      redraw
+      call s:auto_close_preview()
+    endif
   else
     silent execute
           \ 'new | file ' . escape(s:uniq_bufname(a:content.name), ' \') . ' | '
@@ -683,6 +688,19 @@ function! s:open_preview_window(content) "{{{
     call s:fill_buffer(a:content, 'gitdiffallinfo')
     execute 'setlocal nomodifiable | resize ' . (line('$') + 1)
   endif
+endfunction "}}}
+
+
+function! s:auto_close_preview() "{{{
+  echohl WarningMsg | echon "Press <Enter> to enter info window" | echohl None
+  let c = nr2char(getchar())
+  if c == ""
+    wincmd P
+    call search('\v''%(\w|-)+''', '', 4)
+  else
+    pclose
+  endif
+  redraw | echon
 endfunction "}}}
 
 

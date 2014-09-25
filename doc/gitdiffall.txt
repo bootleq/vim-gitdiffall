@@ -73,6 +73,16 @@ g:gitdiffall_rebase_log_format            (default: --format='%w(0,2,2)%B') ~
   :GitDiffInfo will print log message for each conflict commits, with
   formatting from this option.
 
+g:gitdiffall_keep_info_window             (default: none) ~
+
+  Used by :GitDiffInfo command, if set to non-zero, do nothing special for
+  diff info window, otherwise (default behavior) closes the preview window
+  immediately after pressing any key, except for <Enter>, which keeps the
+  window open and jump into it.
+
+  This default is designed to simulate |:echo| behavior, which is easier for
+  simple use case.
+
 ==============================================================================
 REVISIONS                                               *gitdiffall-revisions*
 
