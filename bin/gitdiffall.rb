@@ -82,6 +82,19 @@ end
 if revision.to_i.to_s == revision and revision.length < config[:min_hash_abbr]
   rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
   revision = "#{rev}..#{rev}^"
+
+  detail, comment = %x(git cat-file commit #{rev}).split("\n\n", 2)
+  parents = detail.lines.count { |line| line =~ /^parent/ }
+  if parents > 1
+    puts "\nCommit #{revision}:\n\n" <<
+    "  #{comment.lines.to_a.shift}\n"
+    print "has #{parents} parents, continue? (y/N) "
+    STDOUT.flush
+    if STDIN.gets.chomp != 'y'
+      puts "Aborted."
+      abort
+    end
+  end
 end
 
 diff_cmd = "git diff --name-only #{revision} #{use_cached} #{extra_diff_args}"
