@@ -226,8 +226,14 @@ function! gitdiffall#info(args) "{{{
             \   repeat(" ", 8),
             \   info.use_cached ?
             \     '(staged)' :
-            \     info.rev_at == s:REV_UNDEFINED ? '(wip)' : info.rev_at,
-            \   info.rev_aside
+            \     info.rev_at == s:REV_UNDEFINED ?
+            \       '(wip)' :
+            \       empty(info.rev_at) ?
+            \         '' :
+            \         "'" . info.rev_at . "'",
+            \   empty(info.rev_aside) ?
+            \     '' :
+            \     "'" . info.rev_aside . "'"
             \ )
     endif
   endif
@@ -235,14 +241,19 @@ function! gitdiffall#info(args) "{{{
   if !has_key(info, key)
     echo 'Unsupported option "' . key . '", aborted.'
   else
-    echo join([
-          \   'GitDiff: ',
+    let text = printf("GitDiff: %s  %s\n\n%s",
           \   info.args,
-          \   "  ",
           \   info[title_key],
-          \   "\n\n",
-          \   info[key],
-          \ ], '')
+          \   info[key]
+          \ )
+    let info_content = {
+          \   'text': text,
+          \   'success': 1,
+          \   'name': info.file . ' [GitDiff]',
+          \   'no_file': 0
+          \ }
+
+    call s:open_preview_window(info_content)
   endif
 endfunction "}}}
 
@@ -571,7 +582,7 @@ endfunction "}}}
 function! s:fill_buffer(content, filetype) "{{{
   silent put=a:content.text | 0delete _
   if a:content.success
-    let filetype = a:content.no_file ? 'gitdiffall_nofile' : a:filetype
+    let filetype = a:content.no_file ? 'gitdiffallnofile' : a:filetype
     execute 'setlocal filetype=' . filetype
   endif
   setlocal noswapfile buftype=nofile bufhidden=wipe
@@ -621,8 +632,12 @@ function! s:split_window(at, aside, ours, filetype) "{{{
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(a:at.name), ' \')
     call s:fill_buffer(a:at, a:filetype)
+    if !a:at.no_file
+      diffthis
+    endif
+  else
+    diffthis
   endif
-  diffthis
 
   execute 'vertical new'
 
@@ -644,11 +659,48 @@ function! s:split_window(at, aside, ours, filetype) "{{{
   endif
 
   for winnr in filter(range(1, tabpagewinnr(tabpagenr(), '$')),
-        \ 'getbufvar(winbufnr(v:val), "&filetype") ==# "gitdiffall_nofile"')
+        \ 'getbufvar(winbufnr(v:val), "&filetype") ==# "gitdiffallnofile"')
     silent execute winnr 'wincmd w'
     silent execute 'setlocal nonumber syntax=help | vertical resize ' . s:STATUS_ONLY_WIDTH
   endfor
   wincmd b | wincmd h | normal! ]c
+endfunction "}}}
+
+
+function! s:open_preview_window(content) "{{{
+  if has('quickfix')
+    silent execute 'pedit ' .
+          \ escape(
+          \   '+call s:fill_buffer(a:content, "gitdiffallinfo") | ' .
+          \     'setlocal nonumber | wincmd J | ' .
+          \     'execute "resize " . (line("$") + 1)',
+          \   ' ') .
+          \ ' ' . escape(a:content.name, ' \')
+
+    if !get(g:, 'gitdiffall_keep_info_window')
+      redraw
+      call s:auto_close_preview()
+    endif
+  else
+    silent execute
+          \ 'new | file ' . escape(s:uniq_bufname(a:content.name), ' \') . ' | '
+          \ 'setlocal nonumber | wincmd J'
+    call s:fill_buffer(a:content, 'gitdiffallinfo')
+    execute 'setlocal nomodifiable | resize ' . (line('$') + 1)
+  endif
+endfunction "}}}
+
+
+function! s:auto_close_preview() "{{{
+  echohl WarningMsg | echon "Press <Enter> to enter info window" | echohl None
+  let c = nr2char(getchar())
+  if c == ""
+    wincmd P
+    call search('\v''%(\w|-)+''', '', 4)
+  else
+    pclose
+  endif
+  redraw | echon
 endfunction "}}}
 
 

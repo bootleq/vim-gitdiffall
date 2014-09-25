@@ -47,6 +47,8 @@ COMMANDS                                                 *gitdiffall-commands*
   "log"     Single log which should be most relevant to specified revision.
   (empty)   Use default, same as "logs".
 
+  The output buffer will be set as filetype 'gitdiffallinfo'.
+
 :GitDiffOff                                           *gitdiffall-:GitDiffOff*
 
   Use this to stop GitDiff and back to original buffer.
@@ -70,6 +72,16 @@ g:gitdiffall_rebase_log_format            (default: --format='%w(0,2,2)%B') ~
   Used by :GitDiffInfo command. When doing rebase, and stopped at conflicts,
   :GitDiffInfo will print log message for each conflict commits, with
   formatting from this option.
+
+g:gitdiffall_keep_info_window             (default: none) ~
+
+  Used by :GitDiffInfo command, if set to non-zero, do nothing special for
+  diff info window, otherwise (default behavior) closes the preview window
+  immediately after pressing any key, except for <Enter>, which keeps the
+  window open and jump into it.
+
+  This default is designed to simulate |:echo| behavior, which is easier for
+  simple use case.
 
 ==============================================================================
 REVISIONS                                               *gitdiffall-revisions*
