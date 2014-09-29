@@ -95,20 +95,6 @@ def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
     shortcut = revision
     rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
     revision = "#{rev}..#{rev}^"
-
-    detail, comment = %x(git cat-file commit #{rev}).split("\n\n", 2)
-    parents = detail.lines.count { |line| line =~ /^parent/ }
-    if parents > 1
-      puts "\nCommit #{revision}:\n\n" <<
-      "  #{comment.lines.to_a.shift}\n"
-      print "has #{parents} parents, continue? (y/N) "
-      STDOUT.flush
-      if STDIN.gets.chomp != 'y'
-        puts "Aborted.\nSHORTCUT:#{shortcut}"
-        abort
-      end
-    end
-
     puts "REVISION:#{revision}\nSHORTCUT:#{shortcut}"
     abort
   end
@@ -133,6 +119,22 @@ end
 extra_diff_args = "#{diff_opts.join(' ')} #{paths}"
 
 parse_shortcut(revision.to_s, extra_diff_args, config, detect_shortcut == true) unless detect_shortcut == false
+
+if rev = revision.to_s.match(/(\w+)\.\./).to_a.last
+  detail, comment = %x(git cat-file commit #{rev}).split("\n\n", 2)
+  parents = detail.lines.count { |line| line =~ /^parent/ }
+  if parents > 1
+    STDOUT.flush
+    puts "\nCommit #{rev}:\n\n" <<
+    "  #{comment.lines.to_a.shift}\n"
+    print "has #{parents} parents, continue? (y/N) "
+    STDOUT.flush
+    if STDIN.gets.chomp != 'y'
+      puts "Aborted."
+      abort
+    end
+  end
+end
 
 diff_cmd = "git diff --name-only #{revision} #{use_cached} #{extra_diff_args}"
 files = %x{#{diff_cmd}}.chomp.split.uniq
