@@ -3,7 +3,27 @@ if [[ -z "$script_dir" ]]; then
 fi
 
 function gitdiffall () {
-  ruby ${script_dir}gitdiffall.rb $*
+  if [[ "$#" -eq 1 && "$1" =~ "^(j|k|^@\w+|[0-9]+)$" ]]; then
+    local parsed shortcut revision msg
+    parsed="`ruby ${script_dir}gitdiffall.rb $*`"
+
+    shortcut=`echo "$parsed" | tail -1 | noglob grep -P '^SHORTCUT:' | cut -d : -f 2`
+    revision=`echo "$parsed" | tail -2 | noglob grep -P '^REVISION:' | cut -d : -f 2`
+    msg="`echo "$parsed" | sed '/^\(REVISION\|SHORTCUT\):/d'`"
+
+    [[ -n "$msg" ]] && echo "$msg"
+
+    if [[ -n "$shortcut" ]]; then
+      export _GITDIFFALL_LAST_SHORTCUT=$shortcut
+      if [[ -n "$revision"  ]]; then
+        ruby ${script_dir}gitdiffall.rb --no-shortcut $revision
+      fi
+    else
+      unset _GITDIFFALL_LAST_SHORTCUT
+    fi
+  else
+    ruby ${script_dir}gitdiffall.rb $*
+  fi
 }
 
 function _gitdiffall () {
@@ -26,6 +46,7 @@ function _gitdiffall () {
     '(-b --ignore-space-change)'{-b,--ignore-space-change}
     '(-w --ignore-all-space)'{-w,--ignore-all-space}
     '--ignore-submodules'
+    '(--no-shortcut --shortcut)'{--no-shortcut,--shortcut}
   )
 
   _arguments -C -w -S -s \
