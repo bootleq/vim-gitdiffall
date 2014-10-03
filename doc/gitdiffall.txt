@@ -1,6 +1,6 @@
 *gitdiffall.txt*                                     View git diff in Vim tabs
 
-Version:    0.1.1
+Version:    1.0.0
 Author:     bootleq <bootleq@gmail.com>
 License:    Public Domain
 Repository: https://github.com/bootleq/vim-gitdiffall
@@ -31,6 +31,9 @@ COMMANDS                                                 *gitdiffall-commands*
   <revision> and <arguments> are used similar to git-diff.
   See |gitdiffall-revisions| for some special ways to specify revisions.
 
+  During a merge conflict and no <revision> presented, splits windows for both
+  conflict sides, thus can be used as a mergetool.
+
   If there are existed GitDiff buffers in current tab, no diff will be
   performed, this command calls `:GitDiffInfo "log"` instead.
 
@@ -43,6 +46,8 @@ COMMANDS                                                 *gitdiffall-commands*
   "logs"    All git-log entries between two comparing commits.
   "log"     Single log which should be most relevant to specified revision.
   (empty)   Use default, same as "logs".
+
+  The output buffer will be set as filetype 'gitdiffallinfo'.
 
 :GitDiffOff                                           *gitdiffall-:GitDiffOff*
 
@@ -62,6 +67,22 @@ g:gitdiffall_log_format            (default: none) ~
   If not set, let git to determine it, usually the default "medium" will be
   used.
 
+g:gitdiffall_rebase_log_format            (default: --format='%w(0,2,2)%B') ~
+
+  Used by :GitDiffInfo command. When doing rebase, and stopped at conflicts,
+  :GitDiffInfo will print log message for each conflict commits, with
+  formatting from this option.
+
+g:gitdiffall_keep_info_window             (default: none) ~
+
+  Used by :GitDiffInfo command, if set to non-zero, do nothing special for
+  diff info window, otherwise (default behavior) closes the preview window
+  immediately after pressing any key, except for <Enter>, which keeps the
+  window open and jump into it.
+
+  This default is designed to simulate |:echo| behavior, which is easier for
+  simple use case.
+
 ==============================================================================
 REVISIONS                                               *gitdiffall-revisions*
 
@@ -71,7 +92,8 @@ Examples:
 
   revision    example   description ~
   ---------   -------   -----------  ~
-  (empty)               Nothing (will compare current unstaged/staged changes)
+  (empty)               Compare current index and staging changes, or
+                        ours/theirs changes during merge conflicts
   <sha1>      dae86e    To commit object dae86e
   <refname>   HEAD      To HEAD
   <rev>^      HEAD^     To first parent of HEAD
@@ -82,12 +104,9 @@ For convenience, there are some special notations:
   revision    example   description ~
   ----------  -------   -----------  ~
   @<rev>      @dae86e   Similar to <rev>, but only compare <rev> with it's
-                        previous commit, i.e. expand to <previous-rev>..<rev>.
+                        first parent, i.e. expand to <rev>^..<rev>.
                         This is for quickly checking changes in a specified
                         commit.
-                        Note that <previous-rev> may be different to <rev>^,
-                        but fetched from previous entry in git-log, to provide
-                        a more linear-like history traversal.
   <n>         1         Will be expanded to @<rev>, where <rev> is the nth
                         previous commit from HEAD. <n> starts from 1.
   +<n>        +4        Like <n>, but only commits include current file are

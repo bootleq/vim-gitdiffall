@@ -2,7 +2,7 @@
 
 require 'optparse'
 require 'pathname'
-Version = '0.1.1'
+Version = '1.0.0'
 
 config_path = [
   '~/gitdiffall/config.rb',
@@ -21,12 +21,16 @@ config = ({
   :ignore_pattern => /\.(png|jpg)\Z/i
 }).merge!(defined?(CONFIG) ? CONFIG : {})
 
+SHORTCUT_ENV_VAR = '_GITDIFFALL_LAST_SHORTCUT'
+
 opt = OptionParser.new
 opt.banner = "Usage: gitdiffall [revision] [diff-options] [--] [<path>...]"
 common_opt_desc = '(delegate to git)'
 
 revision, diff_opts, paths = '', [], ''
-use_cached, relative = '', ''
+use_cached, relative, detect_shortcut = '', '', nil
+
+opt.on('--[no-]shortcut', "force parsing REVISION as shortcut") {|v| detect_shortcut = v}
 
 opt.on('--cached', '--staged', common_opt_desc) {|v| use_cached = "--cached"}
 opt.on('--relative[=path]', common_opt_desc) {|v| relative = v; diff_opts << "--relative#{"=#{v}" unless v.nil?}"}
@@ -53,11 +57,57 @@ paths = ARGV.slice!(ARGV.index('--'), ARGV.length).join(' ') if ARGV.index('--')
 opt.parse!(ARGV)
 revision = ARGV.join(' ')
 
+
+def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
+  if %w(j k).include?(revision)
+    last_shortcut = ENV[SHORTCUT_ENV_VAR] || %x(tail -n 400 $HISTFILE | tac | grep -P 'gitdiffall \d+' -m 1 -o | cut -d ' ' -f 2)
+    if last_shortcut.empty?
+      puts "Can't find last shortcut"
+      abort
+    end
+
+    case revision
+    when 'j'
+      shortcut = last_shortcut.to_i + 1
+    when 'k'
+      shortcut = last_shortcut.to_i - 1
+      if shortcut < 1
+        puts "End of shortcuts\nSHORTCUT:0"
+        abort
+      end
+    end
+    revision = shortcut.to_s
+    puts "shortcut: #{last_shortcut} to #{shortcut}"
+  end
+
+  if revision.match(/^@\w+$/)
+    shortcut = %x(git log --format=format:"%H" #{extra_diff_args} | grep #{revision[1..-1]} --max-count=1 --line-number)[/\d+/]
+    if shortcut.nil?
+      puts "unknown revesion #{revision[1..-1]}\nSHORTCUT:#{last_shortcut}"
+      abort
+    end
+
+    revision = shortcut.to_s
+    puts "Shortcut for this commit is #{shortcut}"
+  end
+
+  if revision =~ /\A\d+\z/ && (force_shortcut || revision.to_s.length < config[:min_hash_abbr])
+    shortcut = revision
+    rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
+    revision = "#{rev}..#{rev}^"
+    puts "REVISION:#{revision}\nSHORTCUT:#{shortcut}"
+    abort
+  end
+end  # }}}
+
+
 # revision example:
 #   (nil)       - see current (unstaged) changes
 #   <commit>    - see current changes, compare with <commit>
-#   @<commit>   - compare <commit> with it's previous commit (liner shown in git log)
+#   @<commit>   - compare <commit> with it's first parent (<commit>^)
 #   4 (number)  - shortcut for @<commit> where commit is the <number>-th previous one
+#   j           - shortcut for 'next'     commit from last evaluated <number> shortcut
+#   k           - shortcut for 'previous' commit from last evaluated <number> shortcut
 
 if %x(git rev-parse --is-inside-work-tree) == 'false'
   puts 'Not inside a git working tree.'
@@ -68,40 +118,26 @@ end
 
 extra_diff_args = "#{diff_opts.join(' ')} #{paths}"
 
-if String(revision).match(/^@\w+$/)
-  shortcut = %x(git log --format=format:"%H" #{extra_diff_args} | grep #{revision[1..-1]} --max-count=1 --line-number)[/\d+/]
-  if shortcut.nil?
-    puts "unknown revesion #{revision[1..-1]}"
-    abort
+parse_shortcut(revision.to_s, extra_diff_args, config, detect_shortcut == true) unless detect_shortcut == false
+
+if rev = revision.to_s.match(/(\w+)\.\./).to_a.last
+  detail, comment = %x(git cat-file commit #{rev}).split("\n\n", 2)
+  parents = detail.lines.count { |line| line =~ /^parent/ }
+  if parents > 1
+    STDOUT.flush
+    puts "\nCommit #{rev}:\n\n" <<
+    "  #{comment.lines.to_a.shift}\n"
+    print "has #{parents} parents, continue? (y/N) "
+    STDOUT.flush
+    if STDIN.gets.chomp != 'y'
+      puts "Aborted."
+      abort
+    end
   end
-
-  revision = shortcut
-  puts "Shortcut for this commit is #{revision}.\n\n"
-end
-
-if revision.to_i.to_s == revision and revision.length < config[:min_hash_abbr]
-  rev = %x(git log -1 --skip=#{revision.to_i - 1} --format=format:"%h" #{extra_diff_args})
-  previous = %x(git log -1 --skip=#{revision} --format=format:"%h" #{extra_diff_args})
-  revision = "#{rev}..#{previous}"
 end
 
 diff_cmd = "git diff --name-only #{revision} #{use_cached} #{extra_diff_args}"
-files = %x{#{diff_cmd}}.chomp.split
-
-unmerged = %x{#{diff_cmd} --diff-filter=U}.chomp.split
-count = unmerged.length
-if count > 0
-  plural = count > 1 ? 's' : ''
-  puts "Unmerged file#{plural}:"
-  unmerged.each {|f| puts "  #{f}"}
-  print "skip all #{count} file#{plural}? (Y/n) "
-  STDOUT.flush
-  case STDIN.gets.chomp.downcase
-  when "n"
-  else
-    files = files - unmerged
-  end
-end
+files = %x{#{diff_cmd}}.chomp.split.uniq
 
 to_skip, to_keep = files.partition {|file|
   file.match(config[:ignore_pattern])
