@@ -60,7 +60,8 @@ revision = ARGV.join(' ')
 
 def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
   if %w(j k).include?(revision)
-    last_shortcut = ENV[SHORTCUT_ENV_VAR] || %x(tail -n 400 $HISTFILE | tac | grep -P 'gitdiffall \d+' -m 1 -o | cut -d ' ' -f 2)
+    tac = %x(which tac).empty? ? 'tail -r' : 'tac'
+    last_shortcut = ENV[SHORTCUT_ENV_VAR] || %x(tail -n 400 $HISTFILE | #{tac} | grep -E 'gitdiffall \d+' -m 1 -o | cut -d ' ' -f 2)
     if last_shortcut.empty?
       puts "Can't find last shortcut"
       abort

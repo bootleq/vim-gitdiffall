@@ -3,13 +3,13 @@ if [[ -z "$script_dir" ]]; then
 fi
 
 function gitdiffall () {
-  if [[ "$#" -eq 1 && "$1" =~ "^(j|k|^@\w+|[0-9]+)$" ]]; then
+  if [[ "$#" -eq 1 && "$1" =~ "^(j|k|@[a-z0-9]+|[0-9]+)$" ]]; then
     local parsed shortcut revision msg
     parsed="`ruby ${script_dir}gitdiffall.rb $*`"
 
-    shortcut=`echo "$parsed" | tail -1 | noglob grep -P '^SHORTCUT:' | cut -d : -f 2`
-    revision=`echo "$parsed" | tail -2 | noglob grep -P '^REVISION:' | cut -d : -f 2`
-    msg="`echo "$parsed" | sed '/^\(REVISION\|SHORTCUT\):/d'`"
+    shortcut=`echo "$parsed" | tail -1 | noglob grep -E '^SHORTCUT:' | cut -d : -f 2`
+    revision=`echo "$parsed" | tail -2 | noglob grep -E '^REVISION:' | cut -d : -f 2`
+    msg="`echo "$parsed" | sed -E '/^(REVISION|SHORTCUT):/d'`"
 
     [[ -n "$msg" ]] && echo "$msg"
 
