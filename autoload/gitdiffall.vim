@@ -349,7 +349,7 @@ endfunction "}}}
 " Git Operations: {{{
 
 function! s:merge_base_of(rev_at, rev_aside) "{{{
-  let rev = system('git merge-base ' . a:rev_at . ' ' . a:rev_aside)[0:6])
+  let rev = system('git merge-base ' . a:rev_at . ' ' . a:rev_aside)[0:6]
   call s:throw_shell_error()
   return rev[0:6]
 endfunction "}}}
