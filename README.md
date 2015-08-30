@@ -15,11 +15,11 @@ Install
 2. Execute _install.zsh_ (will ask you for copying scripts).
 3. Source _path/to/gitdiffall.zsh_ in your _.zshrc_.
 
-    ```
-    if [ -e ~/some_dir/gitdiffall.zsh ]; then
-      source ~/some_dir/gitdiffall.zsh
-    fi
-    ```
+```zsh
+if [ -e ~/some_dir/gitdiffall.zsh ]; then
+  source ~/some_dir/gitdiffall.zsh
+fi
+```
 
 Usage
 =====
@@ -69,9 +69,11 @@ Supported config items:
 
 Example `config.rb`:
 
-    CONFIG = {
-      :editor_cmd     => "vim -u /some/other/vimrc",
-      :max_files      => 14,
-      :min_hash_abbr  => 5,
-      :ignore_pattern => /(\.(png|jpg)|-compressed\.js)\Z/i
-    }
+```ruby
+CONFIG = {
+  :editor_cmd     => "vim -u /some/other/vimrc",
+  :max_files      => 14,
+  :min_hash_abbr  => 5,
+  :ignore_pattern => /(\.(png|jpg)|-compressed\.js)\Z/i
+}
+```
