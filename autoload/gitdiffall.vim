@@ -575,7 +575,11 @@ endfunction "}}}
 
 
 function! s:fill_buffer(content, filetype) "{{{
+  let save_undolevels = &l:undolevels
+  setlocal undolevels=-1
   silent put=a:content.text | 0delete _
+  let &l:undolevels = save_undolevels
+
   if a:content.success
     let filetype = a:content.no_file ? 'gitdiffallnofile' : a:filetype
     execute 'setlocal filetype=' . filetype
