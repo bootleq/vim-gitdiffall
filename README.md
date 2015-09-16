@@ -29,7 +29,7 @@ In zsh, use `gitdiffall` to open git diff in Vim tabs, examples:
 - `gitdiffall`  diff current unstaged/staged changes, like `git diff`.
 - `gitdiffall --cached` diff staged changes with HEAD.
 - `gitdiffall dae86e` see all changes since commit "dae86e".
-- `gitdiffall HEAD^..HEAD~2` works like `git diff HEAD..HEAD~2`.
+- `gitdiffall HEAD..HEAD~2` works like `git diff HEAD..HEAD~2`.
 
 For convenience, some special notations are available:
 
