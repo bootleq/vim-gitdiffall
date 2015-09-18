@@ -121,7 +121,7 @@ extra_diff_args = "#{diff_opts.join(' ')} #{paths}"
 
 parse_shortcut(revision.to_s, extra_diff_args, config, detect_shortcut == true) unless detect_shortcut == false
 
-if rev = revision.to_s.match(/(\w+)\.\./).to_a.last
+if rev = revision.to_s.match(/([a-zA-Z0-9\/]+)\.\./).to_a.last
   detail, comment = %x(git cat-file commit #{rev}).split("\n\n", 2)
   parents = detail.lines.count { |line| line =~ /^parent/ }
   if parents > 1
