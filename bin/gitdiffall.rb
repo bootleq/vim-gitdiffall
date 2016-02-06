@@ -84,7 +84,7 @@ def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
   if revision.match(/^@\w+$/)
     shortcut = %x(git log --format=format:"%H" #{extra_diff_args} | grep #{revision[1..-1]} --max-count=1 --line-number)[/\d+/]
     if shortcut.nil?
-      puts "unknown revesion #{revision[1..-1]}\nSHORTCUT:#{last_shortcut}"
+      puts "unknown revision #{revision[1..-1]}\nSHORTCUT:#{last_shortcut}"
       abort
     end
 
