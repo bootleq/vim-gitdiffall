@@ -3,7 +3,7 @@ if [[ -z "$script_dir" ]]; then
 fi
 
 function gitdiffall () {
-  if [[ "$#" -eq 1 && "$1" =~ "^(j|k|@[a-z0-9]+|[0-9]+)$" ]]; then
+  if [[ "$#" -eq 1 && "$1" =~ "^(j|k|@.+|[0-9]+)$" ]]; then
     local parsed shortcut revision msg
     parsed="`ruby ${script_dir}gitdiffall.rb $*`"
 
@@ -14,12 +14,18 @@ function gitdiffall () {
     [[ -n "$msg" ]] && echo "$msg"
 
     if [[ -n "$shortcut" ]]; then
-      export _GITDIFFALL_LAST_SHORTCUT=$shortcut
-      if [[ -n "$revision"  ]]; then
-        ruby ${script_dir}gitdiffall.rb --no-shortcut $revision
+      if [[ "$shortcut" == "!" ]]; then
+        echo -n "Commit not in current branch, continue? (y/N) "
+        read sure
+        if [[ $sure != "y" ]]; then
+          return 1
+        fi
       fi
+      export _GITDIFFALL_LAST_SHORTCUT=$shortcut
+      [[ -n "$revision" ]] && ruby ${script_dir}gitdiffall.rb --no-shortcut $revision
     else
       unset _GITDIFFALL_LAST_SHORTCUT
+      [[ -n "$revision" ]] && ruby ${script_dir}gitdiffall.rb --no-shortcut $revision
     fi
   else
     ruby ${script_dir}gitdiffall.rb $*

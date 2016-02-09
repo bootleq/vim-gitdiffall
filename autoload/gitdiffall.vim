@@ -383,21 +383,38 @@ endfunction "}}}
 function! s:shortcut_for_commit(rev, ...) "{{{
   let option_args = a:0 ? a:1 : ''
   let path_args = a:0 > 1 ? a:2 : ''
-  let shortcut = matchstr(
-        \   system(printf(
-        \     'git log --format=format:"%s" %s -- %s | grep %s --max-count=1 --line-number',
-        \     '%H',
-        \     option_args,
-        \     path_args,
-        \     a:rev
-        \   )),
-        \   '\v\d+'
-        \ )
-  if v:shell_error == 1
+
+  call system("git rev-parse --quiet --verify " . a:rev . " >/dev/null 2>&1")
+  if v:shell_error == 0
+    let shortcut = matchstr(
+          \   system(printf(
+          \     'git log --format=format:"%s" %s -- %s | command grep %s --max-count=1 --line-number',
+          \     '%H',
+          \     option_args,
+          \     path_args,
+          \     a:rev
+          \   )),
+          \   '\v\d+'
+          \ )
+    if v:shell_error == 0
+      return shortcut
+    else
+      return '!'
+    endif
+  else
     throw "gitdiffall:Unknown revision: " . a:rev
+  end
+endfunction "}}}
+
+
+function! s:normailize_revision(rev) "{{{
+  let normalized = substitute(a:rev, '@\(@\)\@!', 'HEAD', 'g')
+  call system("git rev-parse --quiet " . normalized)
+  if v:shell_error == 0
+    return normalized
   endif
-  call s:throw_shell_error(2)
-  return shortcut
+
+  return a:rev
 endfunction "}}}
 
 
@@ -528,8 +545,9 @@ function! s:parse_options(args) "{{{
   if len(revision) > 1
     let revision = [split(revision[0], '\V..', 1)[0], split(revision[-1], '\V..', 1)[-1]]
   endif
+
   return [
-        \   join(revision),
+        \   s:normailize_revision(join(revision)),
         \   use_cached,
         \   join(diff_opts),
         \   join(paths)
@@ -553,9 +571,14 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
     let rev_at = s:merge_base_of(rev_at, rev_aside)
   elseif stridx(a:revision, '..') != -1
     let [rev_at, rev_aside] = split(a:revision, '\V..', 1)
-  elseif a:revision =~ '\v^\@\w+$'
-    let rev_aside = s:shortcut_for_commit(strpart(a:revision, 1), diff_opts, paths)
-    echo printf("Shortcut for this commit is %s.", rev_aside)
+  elseif a:revision[0] == '@'
+    let shortcut = s:shortcut_for_commit(strpart(a:revision, 1), diff_opts, paths)
+    if str2nr(shortcut) > 0
+      let rev_aside = shortcut
+      echo printf("Shortcut for this commit is %s.", rev_aside)
+    elseif shortcut == '!'  " rev in other branch
+      let [rev_at, rev_aside] = [a:revision[1:], a:revision[1:] . '^']
+    endif
   elseif a:revision =~ '\v\+\d+$'
     let rev_aside = strpart(a:revision, 1)
     let paths .= ' ' . expand('%')

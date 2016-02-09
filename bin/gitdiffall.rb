@@ -62,7 +62,7 @@ def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
   if %w(j k).include?(revision)
     tac = %x(which tac).empty? ? 'tail -r' : 'tac'
     last_shortcut = ENV[SHORTCUT_ENV_VAR] || %x(tail -n 400 $HISTFILE | #{tac} | command grep -E 'gitdiffall \d+' -m 1 -o | cut -d ' ' -f 2)
-    if last_shortcut.empty?
+    if last_shortcut.empty? || last_shortcut == '!'
       puts "Can't find last shortcut"
       abort
     end
@@ -81,15 +81,24 @@ def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
     puts "shortcut: #{last_shortcut} to #{shortcut}"
   end
 
-  if revision.match(/^@\w+$/)
-    shortcut = %x(git log --format=format:"%H" #{extra_diff_args} | command grep #{revision[1..-1]} --max-count=1 --line-number)[/\d+/]
-    if shortcut.nil?
-      puts "unknown revision #{revision[1..-1]}\nSHORTCUT:#{last_shortcut}"
-      abort
-    end
+  if revision[0] == '@'
+    real_rev = revision[1..-1]
+    if system("git rev-parse --quiet --verify #{real_rev} >/dev/null 2>&1")
+      normailized = %x(git rev-parse #{real_rev}).chomp
+      shortcut = %x(git log --format=format:"%H" \
+                    #{extra_diff_args} | \
+                    grep #{normailized} \
+                    --max-count=1 --line-number)[/\d+/]
 
-    revision = shortcut.to_s
-    puts "Shortcut for this commit is #{shortcut}"
+      if shortcut.nil?
+        puts "REVISION:#{real_rev}..#{real_rev}^\n"\
+             "SHORTCUT:!"
+        abort
+      end
+
+      revision = shortcut.to_s
+      puts "Shortcut for this commit is #{shortcut}"
+    end
   end
 
   if revision =~ /\A\d+\z/ && (force_shortcut || revision.to_s.length < config[:min_hash_abbr])
@@ -99,7 +108,20 @@ def parse_shortcut(revision, extra_diff_args, config, force_shortcut)  # {{{
     puts "REVISION:#{revision}\nSHORTCUT:#{shortcut}"
     abort
   end
+
+  unless system("git rev-parse --quiet #{revision} >/dev/null 2>&1")
+    puts "Failed parsing revision '#{revision}'"
+    abort
+  end
 end  # }}}
+
+
+def normailize_revision(revision)  # {{{
+  revision.to_s.gsub(/@(?!@)/, 'HEAD').tap do |rev|
+    return rev if system("git rev-parse --quiet #{rev} >/dev/null 2>&1")
+  end
+  return revision
+end # }}}
 
 
 # revision example:
@@ -119,9 +141,11 @@ end
 
 extra_diff_args = "#{diff_opts.join(' ')} #{paths}"
 
+revision = normailize_revision(revision)
+
 parse_shortcut(revision.to_s, extra_diff_args, config, detect_shortcut == true) unless detect_shortcut == false
 
-if rev = revision.to_s.match(/([a-zA-Z0-9\/]+)\.\./).to_a.last
+if rev = revision.to_s.match(/([^.]+)\.\./).to_a.last
   detail, comment = %x(git cat-file commit #{rev}).split("\n\n", 2)
   parents = detail.lines.count { |line| line =~ /^parent/ }
   if parents > 1
