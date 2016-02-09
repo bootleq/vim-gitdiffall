@@ -7,8 +7,8 @@ function gitdiffall () {
     local parsed shortcut revision msg
     parsed="`ruby ${script_dir}gitdiffall.rb $*`"
 
-    shortcut=`echo "$parsed" | tail -1 | noglob grep -E '^SHORTCUT:' | cut -d : -f 2`
-    revision=`echo "$parsed" | tail -2 | noglob grep -E '^REVISION:' | cut -d : -f 2`
+    shortcut=`echo "$parsed" | tail -1 | command grep -E '^SHORTCUT:' | cut -d : -f 2`
+    revision=`echo "$parsed" | tail -2 | command grep -E '^REVISION:' | cut -d : -f 2`
     msg="`echo "$parsed" | sed -E '/^(REVISION|SHORTCUT):/d'`"
 
     [[ -n "$msg" ]] && echo "$msg"
