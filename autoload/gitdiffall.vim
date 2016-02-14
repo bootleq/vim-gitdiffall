@@ -143,6 +143,7 @@ function! gitdiffall#diff(args) "{{{
         \   'conflict_type': conflict_type,
         \   'conflict_marks': exists('conflict_marks') ? conflict_marks : [],
         \   'file': save_file,
+        \   'winrestcmd': '',
         \ }
 endfunction "}}}
 
@@ -253,6 +254,7 @@ function! gitdiffall#info(args) "{{{
           \   'no_file': 0
           \ }
 
+    let info.winrestcmd = winrestcmd()
     call s:open_preview_window(info_content)
   endif
 endfunction "}}}
@@ -722,8 +724,17 @@ function! s:auto_close_preview() "{{{
     call search('\v''%(\w|-)+''', '', 4)
   else
     pclose
+    call s:restore_window_layout()
   endif
   redraw | echon
+endfunction "}}}
+
+
+function! s:restore_window_layout() " {{{
+  if exists('t:gitdiffall_info') && !empty(get(t:gitdiffall_info, 'winrestcmd'))
+    execute t:gitdiffall_info.winrestcmd
+    unlet t:gitdiffall_info.winrestcmd
+  endif
 endfunction "}}}
 
 
