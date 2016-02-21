@@ -34,15 +34,12 @@ In zsh, use `gitdiffall` to open git diff in Vim tabs, examples:
 For convenience, some special notations are available:
 
 - `gitdiffall @dae86e` expands to `dae86e^..dae86e`,  
-  This is a shrotcut for checking changes in a specified commit.
+  This is a shrotcut for checking changes in a specified commit.  
+  Examples: `@@~2` (HEAD~2), `@stash@{0}` (stashed entry), `@master` (last commit at master branch).
 - `gitdiffall 1`  is similar to `@<rev>`,  
   where `<rev>` is the nth previous commit from HEAD, starts from 1.
 - `gitdiffall j` and `gitdiffall k`  shortcut to _next_/_previous_ commit from last evaluated `gitdiffall <n>`.  
   (use enviroment variable `$_GITDIFFALL_LAST_SHORTCUT`)
-
-You can specified `@<rev>` for the oldest commit you care about,  
-the shortcut number `<n>` of that commit will be shown in command line.  
-Later you can use `gitdiffall <n-1>`, `gitdiffall <n-2>`, ..., to walk through every newer commit.
 
 Configuration
 =============
