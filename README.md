@@ -5,7 +5,6 @@ View git diff in Vim tabs.
 
 - `gitdiffall` command for zsh (**requires ruby** for running _gitdiffall.rb_).
 - `GitDiff`, `GitDiffInfo`, `GitDiffOff` commands for Vim.
-- 3-way diff during merge conflicts.
 
 
 Install
@@ -21,6 +20,7 @@ if [ -e ~/some_dir/gitdiffall.zsh ]; then
 fi
 ```
 
+
 Usage
 =====
 
@@ -34,12 +34,17 @@ In zsh, use `gitdiffall` to open git diff in Vim tabs, examples:
 For convenience, some special notations are available:
 
 - `gitdiffall @dae86e` expands to `dae86e^..dae86e`,  
-  This is a shortcut for checking changes in a specified commit.  
+  this is a shortcut for checking changes at specific commit.  
   Examples: `@@~2` (HEAD~2), `@stash@{0}` (stashed entry), `@master` (last commit at master branch).
-- `gitdiffall 1`  is similar to `@<rev>`,  
-  where `<rev>` is the nth previous commit from HEAD, starts from 1.
-- `gitdiffall j` and `gitdiffall k`  shortcut to _next_/_previous_ commit from last evaluated `gitdiffall <n>`.  
-  (use environment variable `$_GITDIFFALL_LAST_SHORTCUT`)
+
+- `gitdiffall 1`  is similar to `@<rev>`, where `<rev>` is the *1*st previous commit from HEAD.  
+  You can increase the digit for older commits.
+
+- `gitdiffall j` and `gitdiffall k` shortcut to _next_/_previous_ commit from last evaluated `gitdiffall <n>`.  
+  (this uses environment variable `$_GITDIFFALL_LAST_SHORTCUT` to remember last eval)
+
+During merge conflicts, `gitdiffall` will open a 3-way diff in Vim.
+
 
 Configuration
 =============
