@@ -79,3 +79,18 @@ CONFIG = {
   :ignore_pattern => /(\.(png|jpg)|-compressed\.js)\Z/i
 }
 ```
+
+
+Tips
+====
+
+In tmux copy mode, select some commit hash and press `>` to do gitdiffall in
+new tmux window, see [tmux-in.rb][] gist.
+
+```
+bind -t vi-copy > copy-pipe "~/.tmux-in.rb gitdiffall"
+```
+
+
+
+[tmux-in.rb]: https://gist.github.com/bootleq/786cb41a8072e537467e
