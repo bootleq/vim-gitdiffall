@@ -10,6 +10,7 @@ CONTENTS                                                 *gitdiffall-contents*
 
     Introduction  .................. |gitdiffall-introduction|
     Commands  ...................... |gitdiffall-commands|
+    Functions  ..................... |gitdiffall-functions|
     Configuration  ................. |gitdiffall-configuration|
     Revisions  ..................... |gitdiffall-revisions|
     External scripts  .............. |gitdiffall-external-scripts|
@@ -55,6 +56,13 @@ COMMANDS                                                 *gitdiffall-commands*
 
   Diff options will be restore to their original values, behave like
   |:diffoff| after Vim 7.4.
+
+==============================================================================
+FUNCTIONS                                               *gitdiffall-functions*
+
+gitdiffall#quit_info_window()                  *gitdiffall#quit_info_window()*
+
+  Close GitDiffInfo window, and restore original window layout.
 
 ==============================================================================
 CONFIGURATION                                       *gitdiffall-configuration*

@@ -287,6 +287,12 @@ function! gitdiffall#diffoff() "{{{
   endif
 endfunction "}}}
 
+
+function! gitdiffall#quit_info_window() "{{{
+  silent quit
+  call s:restore_window_layout()
+endfunction "}}}
+
 " }}} Main Functions
 
 
