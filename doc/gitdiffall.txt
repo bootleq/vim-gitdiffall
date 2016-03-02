@@ -60,6 +60,12 @@ COMMANDS                                                 *gitdiffall-commands*
 ==============================================================================
 FUNCTIONS                                               *gitdiffall-functions*
 
+gitdiffall#diff()                                          *gitdiffall#diff()*
+gitdiffall#info()                                          *gitdiffall#info()*
+gitdiffall#diffoff()                                    *gitdiffall#diffoff()*
+
+  Function version of |:GitDiff|, |:GitDiffInfo| and |:GitDiffOff|.
+
 gitdiffall#quit_info_window()                  *gitdiffall#quit_info_window()*
 
   Close GitDiffInfo window, and restore original window layout.
