@@ -1,6 +1,12 @@
 CHANGES
 =======
 
+## 1.1.0 (2016-05-08)
+
+* Restore window layout after close `DiffInfo` preview.
+* View commit in other branch, stash is also supported.
+* Fix script compatibility problems on Mac (BSD based).
+
 ## 1.0.0 (2014-10-04)
 
 * **CHANGE** meaning of "_previous_" commit for `gitdiffall @{commit}`, `gitdiffall <n>` shortcuts.  
