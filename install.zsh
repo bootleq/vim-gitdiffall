@@ -26,10 +26,6 @@ if ! [[ -f "$install_dir"gitdiffall.zsh ]]; then
   exit 1
 fi
 
-local txt="$(<<__AUTO_INSERT__
-# auto insert by install.zsh {{{
-[[ -z "\$script_dir" ]] && local script_dir=$install_dir
-# }}} auto insert by install.zsh\n
-__AUTO_INSERT__)"
+local txt='[[ -z "$script_dir" ]] && local script_dir='$install_dir' # auto inserted by install.zsh\n '
 
 echo -e $txt|cat - "$install_dir"gitdiffall.zsh > /tmp/out && mv /tmp/out "$install_dir"gitdiffall.zsh
