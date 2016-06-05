@@ -15,13 +15,13 @@ Install like general Vim plugins.
 
 ## Install Zsh Helper Function
 
-- With [zplug][]
+- With [zplug][] (preferred way)
 
   ```zsh
   zplug "bootleq/vim-gitdiffall", use:"bin/*.zsh"
   ```
 
-- Manual install
+- or Manual install
 
   1. Execute _install.zsh_ (will ask you for copying scripts to path).
   2. Source _path/to/gitdiffall.zsh_ in your _.zshrc_.
