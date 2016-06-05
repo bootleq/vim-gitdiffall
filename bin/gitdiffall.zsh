@@ -1,8 +1,6 @@
-if [[ -z "$script_dir" ]]; then
-  local script_dir=$HOME/bin/
-fi
-
 function gitdiffall () {
+  [[ -z "$script_dir" ]] && local script_dir=${${(%):-%x}:h}/
+
   if [[ "$#" -eq 1 && "$1" =~ "^(j|k|@.+|[0-9]+)$" ]]; then
     local parsed shortcut revision msg
     parsed="`ruby ${script_dir}gitdiffall.rb $*`"
