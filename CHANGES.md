@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+## 1.2.0 (2016-06-05)
+
+* Easier integration with zplug.
+
 ## 1.1.0 (2016-05-08)
 
 * Restore window layout after close `DiffInfo` preview.
