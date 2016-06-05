@@ -3,26 +3,38 @@ gitdiffall
 
 View git diff in Vim tabs.
 
-- `gitdiffall` command for zsh (**requires ruby** for running _gitdiffall.rb_).
+- `gitdiffall` function for zsh (**requires ruby** for running _gitdiffall.rb_).
 - `GitDiff`, `GitDiffInfo`, `GitDiffOff` commands for Vim.
 
 
 Install
 =======
 
-1. Install like general Vim plugins.
-2. Execute _install.zsh_ (will ask you for copying scripts).
-3. Source _path/to/gitdiffall.zsh_ in your _.zshrc_.
-
-```zsh
-if [ -e ~/some_dir/gitdiffall.zsh ]; then
-  source ~/some_dir/gitdiffall.zsh
-fi
-```
+Install like general Vim plugins.
 
 
-Usage
-=====
+## Install Zsh Helper Function
+
+- With [zplug][]
+
+  ```zsh
+  zplug "bootleq/vim-gitdiffall", use:"bin/*.zsh"
+  ```
+
+- Manual install
+
+  1. Execute _install.zsh_ (will ask you for copying scripts to path).
+  2. Source _path/to/gitdiffall.zsh_ in your _.zshrc_.
+
+  ```zsh
+  if [ -e ~/some_dir/gitdiffall.zsh ]; then
+    source ~/some_dir/gitdiffall.zsh
+  fi
+  ```
+
+
+Zsh Function Usage
+==================
 
 In zsh, use `gitdiffall` to open git diff in Vim tabs, examples:
 
@@ -46,8 +58,8 @@ For convenience, some special notations are available:
 During merge conflicts, `gitdiffall` will open a 3-way diff in Vim.
 
 
-Configuration
-=============
+Zsh Function Configuration
+==========================
 
 gitdiffall.rb takes configure file from one of the following:
 
@@ -94,3 +106,4 @@ bind -t vi-copy > copy-pipe "~/.tmux-in.rb gitdiffall"
 
 
 [tmux-in.rb]: https://gist.github.com/bootleq/786cb41a8072e537467e
+[zplug]: http://zplug.sh/
