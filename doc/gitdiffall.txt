@@ -73,6 +73,16 @@ gitdiffall#quit_info_window()                  *gitdiffall#quit_info_window()*
 ==============================================================================
 CONFIGURATION                                       *gitdiffall-configuration*
 
+                                                  *g:gitdiffall_min_hash_abbr*
+g:gitdiffall_min_hash_abbr            (default: 5) ~
+
+  When specify a numeric revision to |:GitDiff| (e.g., 666), the meanings of
+  (a) nth-previous commit shortcut @666 or (b) literal commit hash 666, are
+  ambiguous. See |gitdiffall-revisions|.
+
+  Practical rule: revision digits >= this setting will be taken as literal
+  commit, otherwise it's a shortcut.
+
                                                      *g:gitdiffall_log_format*
 g:gitdiffall_log_format            (default: none) ~
 
@@ -123,6 +133,7 @@ For convenience, there are some special notations:
                         commit.
   <n>         1         Will be expanded to @<rev>, where <rev> is the nth
                         previous commit from HEAD. <n> starts from 1.
+                        Also see |g:gitdiffall_min_hash_abbr|.
   +<n>        +4        Like <n>, but only commits include current file are
                         counted.
 

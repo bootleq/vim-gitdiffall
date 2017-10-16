@@ -569,7 +569,6 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
   let rev_at = s:REV_UNDEFINED
   let rev_aside = a:revision
 
-  let MIN_HASH_ABBR = 5
   call insert(s:complete_cache().recent, a:revision)
 
   if a:use_cached
@@ -592,7 +591,7 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
     let paths .= ' ' . expand('%')
   endif
 
-  if string(str2nr(rev_aside)) == rev_aside && len(rev_aside) < MIN_HASH_ABBR
+  if string(str2nr(rev_aside)) == rev_aside && len(rev_aside) < get(g:, 'gitdiffall_min_hash_abbr', 5)
     let rev_at = system(printf('git log -1 --skip=%s --format=format:"%s" %s -- %s',
           \   rev_aside - 1,
           \   "%h",
