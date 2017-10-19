@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+## 1.3.0 (2017-10-19)
+
+* Add `min_hash_abbr` option.
+
 ## 1.2.0 (2016-06-05)
 
 * Easier integration with zplug.
