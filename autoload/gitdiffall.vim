@@ -688,6 +688,8 @@ function! s:split_window(at, aside, ours, filetype) "{{{
     wincmd H
   endif
 
+  diffupdate
+
   for winnr in filter(range(1, tabpagewinnr(tabpagenr(), '$')),
         \ 'getbufvar(winbufnr(v:val), "&filetype") ==# "gitdiffallnofile"')
     silent execute winnr 'wincmd w'
