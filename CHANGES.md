@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+## 1.3.1 (2020-04-04)
+
+* Do additional diffupdate to cover autocmd in edge case.
+
 ## 1.3.0 (2017-10-19)
 
 * Add `min_hash_abbr` option.
