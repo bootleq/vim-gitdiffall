@@ -15,7 +15,13 @@ Install like general Vim plugins.
 
 ## Install Zsh Helper Function
 
-- With [zplug][] (preferred way)
+- With [zcomet][]
+
+  ```zsh
+  zcomet trigger gitdiffall bootleq/vim-gitdiffall bin
+  ```
+
+- or [zplug][]
 
   ```zsh
   zplug "bootleq/vim-gitdiffall", use:"bin/*.zsh"
@@ -107,3 +113,4 @@ bind -t vi-copy > copy-pipe "~/.tmux-in.rb gitdiffall"
 
 [tmux-in.rb]: https://gist.github.com/bootleq/786cb41a8072e537467e
 [zplug]: http://zplug.sh/
+[zcomet]: https://github.com/agkozak/zcomet
