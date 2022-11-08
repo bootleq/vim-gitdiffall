@@ -130,7 +130,8 @@ function! gitdiffall#diff(args) "{{{
         \     (rev_at == s:REV_UNDEFINED ? s:REV_UNDEFINED : ''),
         \   exists('theirs_content') ? theirs_content : rev_aside_content,
         \   exists('ours_content') ? ours_content : '',
-        \   save_filetype
+        \   save_filetype,
+        \   &fileformat
         \ )
 
   let t:gitdiffall_info = {
@@ -464,6 +465,7 @@ function! s:get_content(rev, file, ...) "{{{
         \   a:rev,
         \   shellescape(a:file)
         \ ))
+
   if v:shell_error
     let result = substitute(result, '[\n]', ' ', 'g')
   endif
@@ -605,15 +607,23 @@ function! s:parse_revision(revision, use_cached, ...) "{{{
 endfunction "}}}
 
 
-function! s:fill_buffer(content, filetype) "{{{
+function! s:fill_buffer(content, filetype, fileformat) "{{{
   let save_undolevels = &l:undolevels
   setlocal undolevels=-1
-  silent put=a:content.text | 0delete _
+
+  let text = a:content.text
+
+  if match(&fileformats, 'unix') == 0 && a:fileformat == 'dos'
+    let text = substitute(text, '\r\n', '\n', 'g')
+  endif
+
+  silent put=text | 0delete _
   let &l:undolevels = save_undolevels
 
   if a:content.success
     let filetype = a:content.no_file ? 'gitdiffallnofile' : a:filetype
     execute 'setlocal filetype=' . filetype
+    execute 'setlocal fileformat=' . a:fileformat
   endif
   setlocal noswapfile buftype=nofile bufhidden=wipe
 endfunction "}}}
@@ -657,11 +667,11 @@ function! s:get_content_for_status(status, path) "{{{
 endfunction "}}}
 
 
-function! s:split_window(at, aside, ours, filetype) "{{{
+function! s:split_window(at, aside, ours, filetype, fileformat) "{{{
   if type(a:at) == type({})
     execute 'enew'
     silent execute 'file ' . escape(s:uniq_bufname(a:at.name), ' \')
-    call s:fill_buffer(a:at, a:filetype)
+    call s:fill_buffer(a:at, a:filetype, a:fileformat)
     if !a:at.no_file
       diffthis
     endif
@@ -672,7 +682,7 @@ function! s:split_window(at, aside, ours, filetype) "{{{
   execute 'vertical new'
 
   silent execute 'file ' . escape(s:uniq_bufname(a:aside.name), ' \')
-  call s:fill_buffer(a:aside, a:filetype)
+  call s:fill_buffer(a:aside, a:filetype, a:fileformat)
   if a:aside.success && !a:aside.no_file
     diffthis
   endif
@@ -681,7 +691,7 @@ function! s:split_window(at, aside, ours, filetype) "{{{
   if type(a:ours) == type({})
     execute 'vertical new'
     silent execute 'file ' . escape(s:uniq_bufname(a:ours.name), ' \')
-    call s:fill_buffer(a:ours, a:filetype)
+    call s:fill_buffer(a:ours, a:filetype, a:fileformat)
     if !a:ours.no_file
       diffthis
     endif
@@ -700,10 +710,12 @@ endfunction "}}}
 
 
 function! s:open_preview_window(content) "{{{
+  let fileformat = &fileformat
+
   if has('quickfix')
     silent execute 'pedit ' .
           \ escape(
-          \   '+call s:fill_buffer(a:content, "gitdiffallinfo") | ' .
+          \   '+call s:fill_buffer(a:content, "gitdiffallinfo", fileformat) | ' .
           \     'setlocal nonumber | wincmd J | ' .
           \     'execute "resize " . (line("$") + 1)',
           \   ' ') .
@@ -717,7 +729,7 @@ function! s:open_preview_window(content) "{{{
     silent execute
           \ 'new | file ' . escape(s:uniq_bufname(a:content.name), ' \') . ' | '
           \ 'setlocal nonumber | wincmd J'
-    call s:fill_buffer(a:content, 'gitdiffallinfo')
+    call s:fill_buffer(a:content, 'gitdiffallinfo', fileformat)
     execute 'setlocal nomodifiable | resize ' . (line('$') + 1)
   endif
 endfunction "}}}

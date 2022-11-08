@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+## Unreleased
+
+* For a `dos` format file, open the diff buffer with also dos fileformat.
+
 ## 1.3.1 (2020-04-04)
 
 * Do additional diffupdate to cover autocmd in edge case.
