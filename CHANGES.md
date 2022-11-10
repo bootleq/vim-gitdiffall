@@ -1,7 +1,7 @@
 CHANGES
 =======
 
-## Unreleased
+## 1.3.2 (2022-11-10)
 
 * For a `dos` format file, open the diff buffer with also dos fileformat.
 
