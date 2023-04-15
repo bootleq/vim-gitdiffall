@@ -2,7 +2,7 @@
 
 require 'optparse'
 require 'pathname'
-Version = '1.3.2'
+Version = '1.4.0'
 
 
 cfg_files = %w[

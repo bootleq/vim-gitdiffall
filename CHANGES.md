@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+## 1.4.0 (2023-04-15)
+
+* Use config file from `XDG_CONFIG_HOME` if available.
+* Respect `$EDITOR` config as default editor command.
+
 ## 1.3.2 (2022-11-10)
 
 * For a `dos` format file, open the diff buffer with also dos fileformat.
