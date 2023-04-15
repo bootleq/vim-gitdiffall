@@ -69,6 +69,8 @@ Zsh Function Configuration
 
 gitdiffall.rb takes configure file from one of the following:
 
+- `$XDG_CONFIG_HOME/gitdiffall/config.rb`
+- `$XDG_CONFIG_HOME/gitdiffall-config.rb`
 - `~/gitdiffall/config.rb`
 - `~/gitdiffall-config.rb`
 - `{dir_contains_gitdiffall.rb}/gitdiffall/config.rb`
