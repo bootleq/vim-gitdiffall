@@ -7,13 +7,12 @@ View git diff in Vim tabs.
 - `GitDiff`, `GitDiffInfo`, `GitDiffOff` commands for Vim.
 
 
-Install
-=======
+## Install
 
 Install like general Vim plugins.
 
 
-## Install Zsh Helper Function
+### Install Zsh Helper Function
 
 - With [zcomet][]
 
@@ -39,8 +38,7 @@ Install like general Vim plugins.
   ```
 
 
-Zsh Function Usage
-==================
+## Zsh Function Usage
 
 In zsh, use `gitdiffall` to open git diff in Vim tabs, examples:
 
@@ -64,11 +62,12 @@ For convenience, some special notations are available:
 During merge conflicts, `gitdiffall` will open a 3-way diff in Vim.
 
 
-Zsh Function Configuration
-==========================
+## Zsh Function Configuration
 
 gitdiffall.rb takes configure file from one of the following:
 
+- `$XDG_CONFIG_HOME/gitdiffall/config.rb`
+- `$XDG_CONFIG_HOME/gitdiffall-config.rb`
 - `~/gitdiffall/config.rb`
 - `~/gitdiffall-config.rb`
 - `{dir_contains_gitdiffall.rb}/gitdiffall/config.rb`
@@ -76,7 +75,7 @@ gitdiffall.rb takes configure file from one of the following:
 
 Supported config items:
 
-- `editor_cmd` (default: "vim")  
+- `editor_cmd` (default: respect `$EDITOR`, or "vim")  
   Command to execute Vim.
 - `max_files` (default: 14)  
   Wait for confirmation before open such many files.
@@ -99,8 +98,7 @@ CONFIG = {
 ```
 
 
-Tips
-====
+## Tips
 
 In tmux copy mode, select some commit hash and press `>` to do gitdiffall in
 new tmux window, see [tmux-in.rb][] gist.

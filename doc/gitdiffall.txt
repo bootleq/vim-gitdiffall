@@ -1,6 +1,6 @@
 *gitdiffall.txt*                                     View git diff in Vim tabs
 
-Version:    1.3.2
+Version:    1.4.0
 Author:     bootleq <bootleq@gmail.com>
 License:    Public Domain
 Repository: https://github.com/bootleq/vim-gitdiffall

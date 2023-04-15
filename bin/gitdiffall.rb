@@ -2,20 +2,30 @@
 
 require 'optparse'
 require 'pathname'
-Version = '1.3.2'
+Version = '1.4.0'
 
-config_path = [
-  '~/gitdiffall/config.rb',
-  '~/gitdiffall-config.rb',
-  (File.dirname(__FILE__) + '/gitdiffall/config.rb'),
-  (File.dirname(__FILE__) + '/gitdiffall-config.rb')
-].find {|path|
+
+cfg_files = %w[
+  gitdiffall/config.rb
+  gitdiffall-config.rb
+]
+cfg_dirs = [
+  ENV['XDG_CONFIG_HOME'],
+  ENV['HOME'],
+  File.dirname(__FILE__)
+].reject(&:nil?)
+cfg_paths = cfg_dirs.flat_map do |dir|
+  cfg_files.map { |file| "#{dir}/#{file}" }
+end
+
+cfg_path = cfg_paths.find do |path|
   File.exist?(File.expand_path(path))
-}
-require config_path if config_path
+end
+require cfg_path if cfg_path
+
 
 config = ({
-  :editor_cmd     => 'vim',
+  :editor_cmd     => ENV['EDITOR'] || 'vim',
   :max_files      => 14,
   :min_hash_abbr  => 5,
   :ignore_pattern => /\.(png|jpg)\Z/i
