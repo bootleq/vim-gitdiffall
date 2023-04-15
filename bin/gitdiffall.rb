@@ -15,7 +15,7 @@ config_path = [
 require config_path if config_path
 
 config = ({
-  :editor_cmd     => 'vim',
+  :editor_cmd     => ENV['EDITOR'] || 'vim',
   :max_files      => 14,
   :min_hash_abbr  => 5,
   :ignore_pattern => /\.(png|jpg)\Z/i
