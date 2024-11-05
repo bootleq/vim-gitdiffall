@@ -2,6 +2,7 @@
 
 require 'optparse'
 require 'pathname'
+require 'shellwords'
 Version = '1.4.0'
 
 
@@ -209,7 +210,7 @@ if count > 0
 
   cmd = [
     config[:editor_cmd],
-    "-p #{args.join(' ')}",
+    "-p #{args.map{ |f| Shellwords.shellescape(f) }.join(' ')}",
     "-c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}'",
     "-c 'tabfirst'",
   ].join(' ')
