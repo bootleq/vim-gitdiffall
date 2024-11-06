@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+## 1.4.1 (2024-11-06)
+
+* Fix gitdiffall.rb missing escape for file names.
+
 ## 1.4.0 (2023-04-15)
 
 * Use config file from `XDG_CONFIG_HOME` if available.

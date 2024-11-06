@@ -3,7 +3,7 @@
 require 'optparse'
 require 'pathname'
 require 'shellwords'
-Version = '1.4.0'
+Version = '1.4.1'
 
 
 cfg_files = %w[
