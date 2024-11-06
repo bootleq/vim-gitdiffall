@@ -2,6 +2,7 @@
 
 require 'optparse'
 require 'pathname'
+require 'shellwords'
 Version = '1.4.0'
 
 
@@ -207,7 +208,14 @@ if count > 0
     (toplevel + (relative || pwd) + file).relative_path_from(toplevel + pwd)
   }.to_a
 
-  system("#{config[:editor_cmd]} -p #{args.join(' ')} -c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}' -c 'tabfirst'")
+  cmd = [
+    config[:editor_cmd],
+    "-p #{args.map{ |f| Shellwords.shellescape(f) }.join(' ')}",
+    "-c 'tabdo GitDiff #{revision} #{use_cached} #{extra_diff_args}'",
+    "-c 'tabfirst'",
+  ].join(' ')
+
+  system(cmd)
 else
   puts 'no differences'
 end
